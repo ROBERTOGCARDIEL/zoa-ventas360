@@ -1173,10 +1173,7 @@ async function readImg(file){return new Promise((res,rej)=>{const r=new FileRead
 async function readPDF(file){const ab=await file.arrayBuffer();pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument({data:ab}).promise;let txt='';for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();txt+=c.items.map(x=>x.str).join(' ')+'\n';}return txt;}
 async function readXLSX(file){const ab=await file.arrayBuffer();const wb=XLSX.read(ab,{type:'array'});let txt='';wb.SheetNames.forEach(n=>{txt+=XLSX.utils.sheet_to_csv(wb.Sheets[n])+'\n';});return txt;}
 async function parseAI(raw, year){
-  // ── DIRECT XLSX PARSER (no AI needed) ────────────────────────────────────
-  // Called when user uploads an Excel file
-  // Parses all rows by indent level and updates ALL data structures
-
+  // ── STORE NORMALIZATION ────────────────────────────────────────────────────
   function normStore(n){
     const u=n.toLowerCase();
     if(u.includes('oficina')||u.includes('producci')||u.includes('no usado')||u.includes('piloto')||u.includes('prueba')) return null;
@@ -1185,9 +1182,9 @@ async function parseAI(raw, year){
     if(u.includes('izazaga')) return 'Izazaga';
     if(u.includes('zapotlanejo 2')) return 'Zapotlanejo2';
     if(u.includes('zapotlanejo')) return 'Zapotlanejo';
-    if(u.includes('ma2')) return 'M A';
+    if(u.includes('ma2')||u.includes('miguel 2')) return 'M A';
     if(u.includes('m a')||u.includes('miguel')) return 'M A';
-    if(u.includes('linea')||u.includes('línea')) return 'Líneas';
+    if(u.includes('linea')||u.includes('\u00ednea')) return 'L\u00edneas';
     if(u.includes('club')) return 'Club';
     if(u.includes('dm')||u.includes('denim')) return 'DM';
     if(u.includes('elite')) return 'ELITE';
@@ -1196,148 +1193,145 @@ async function parseAI(raw, year){
 
   function excluir(p){
     const u=p.toUpperCase();
-    return ['PAQUETERIA','PAQUETERÍA','ENVIO','ENVÍO','FLETE','AJUSTE',
-            'PRUEBA','PILOTO','DEMO','BONIFICACION','DESCUENTO','ORIGO','TENIS']
-      .some(x=>u.includes(x));
+    return ['PAQUETERIA','PAQUETER\u00cdA','ENVIO','ENV\u00cdO','FLETE','AJUSTE',
+            'BONIFICACION','DESCUENTO'].some(x=>u.includes(x));
   }
 
   const MES_MAP={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
-  const ACTIVE=['Líneas','M A','Club','DM','Zapotlanejo','ELITE'];
+  const ACTIVE=['L\u00edneas','M A','Club','DM','Zapotlanejo','ELITE'];
 
-  // ── PARSE XLSX DIRECTLY ──────────────────────────────────────────────────
+  // ── PARSE XLSX ─────────────────────────────────────────────────────────────
   const wb=XLSX.read(raw,{type:'array'});
   const ws=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
 
-  // Detect format: check if indent=25 is a store or a product
-  // Indent levels: 0=Total 5=Year 10=Month 15=Week 20=? 25=? 30=?
-  // Format A (with stores): 20=Day 25=Store 30=Product
-  // Format B (no stores):   20=Day 25=Product
-  let formatA = false;
-  for(let ri=0;ri<Math.min(200,rows.length);ri++){
+  // ── DETECT FORMAT ──────────────────────────────────────────────────────────
+  // Scan first 300 rows to detect indent structure
+  let indentsFound=new Set();
+  for(let ri=0;ri<Math.min(300,rows.length);ri++){
     const cell=String(rows[ri][0]||'');
-    const indent=cell.length-cell.trimStart().length;
-    if(indent===25){
-      const s=cell.trim();
-      if(normStore(s)!==null){formatA=true;break;}
-      // Check if it looks like a date
-      if(/\d{1,2}\s+\w+\.?\s+\d{4}/.test(s)){break;}
-    }
+    if(cell.trim()) indentsFound.add(cell.length-cell.trimStart().length);
   }
-  console.log('File format:', formatA?'A (with stores)':'B (no stores)');
+  const inds=Array.from(indentsFound).sort((a,b)=>a-b);
+  
+  // Format 2025: [0,5,10,15,20] → day=10, store=15, product=20
+  // Format A 2026: [0,5,10,15,20,25,30] → day=20, store=25, product=30
+  // Format B 2026: [0,5,10,15,20,25] → day=20, product=25
+  let fmt='B'; // default
+  if(inds.includes(30)) fmt='A';         // has indent 30 → Format A (with stores)
+  else if(inds.includes(20)&&inds.includes(15)&&!inds.includes(25)) fmt='2025'; // 2025 format
+  
+  console.log('Indents found:', inds, '→ Format:', fmt);
 
-  // Accumulators
-  const byStoreDayProd={}; // store→date→prod→qty
-  const byDayProd={};      // date→prod→qty (empresa, format B)
+  // Level assignments
+  const LVL_DAY   = fmt==='2025'?10:20;
+  const LVL_STORE = fmt==='2025'?15:(fmt==='A'?25:-1);
+  const LVL_PROD  = fmt==='2025'?20:(fmt==='A'?30:25);
+
+  // ── ACCUMULATE DATA ────────────────────────────────────────────────────────
+  const byStoreDayProd={}; // store→date→canon→qty
   const byStoreDay={};     // store→date→qty
-  const byDayTotal={};     // date→qty (empresa)
+  const byDayProd={};      // date→canon→qty (Format B empresa)
+  const byDayTotal={};     // date→qty (Format B empresa)
+  const storesInFile=new Set();
+  const monthsInFile=new Set();
 
   let curDay=null, curStore=null;
 
   for(let ri=0;ri<rows.length;ri++){
-    const row=rows[ri];
-    const cell=String(row[0]||'');
+    const cell=String(rows[ri][0]||'');
     if(!cell.trim()) continue;
     const indent=cell.length-cell.trimStart().length;
     const s=cell.trim();
-    const qty=parseFloat(row[1])||0;
+    const qty=parseFloat(rows[ri][1])||0;
 
-    if(indent===20){
-      // Try to parse as date: "02 ene. 2026"
+    if(indent===LVL_DAY){
       const dm=s.match(/^(\d{1,2})\s+(\w+)\.?\s+(\d{4})/);
       if(dm){
         const mon=MES_MAP[dm[2].substring(0,3).toLowerCase()];
         if(mon!==undefined){
-          const d=dm[3]+'-'+String(mon+1).padStart(2,'0')+'-'+dm[1].padStart(2,'0');
-          curDay=d; curStore=null;
+          curDay=dm[3]+'-'+String(mon+1).padStart(2,'0')+'-'+dm[1].padStart(2,'0');
+          curStore=null;
+          monthsInFile.add(mon);
         }
       }
-    } else if(indent===25){
-      if(formatA){
-        curStore=normStore(s);
+    } else if(LVL_STORE>=0&&indent===LVL_STORE){
+      curStore=normStore(s);
+      if(curStore) storesInFile.add(curStore);
+    } else if(indent===LVL_PROD){
+      if(!curDay||qty===0||excluir(s)) continue;
+      const canon=normalizeProd(s);
+      if(!canon||canon==='__EXCLUIR__') continue;
+
+      if(fmt==='B'){
+        // No store level: accumulate empresa total
+        if(!byDayProd[curDay]) byDayProd[curDay]={};
+        byDayProd[curDay][canon]=(byDayProd[curDay][canon]||0)+qty;
+        byDayTotal[curDay]=(byDayTotal[curDay]||0)+qty;
       } else {
-        // Format B: product at indent 25
-        if(curDay&&qty!==0&&!excluir(s)){
-          const canon=normalizeProd(s);
-          if(canon==='__EXCLUIR__') continue;
-          if(!byDayProd[curDay]) byDayProd[curDay]={};
-          byDayProd[curDay][canon]=(byDayProd[curDay][canon]||0)+qty;
-          byDayTotal[curDay]=(byDayTotal[curDay]||0)+qty;
-        }
-      }
-    } else if(indent===30&&formatA){
-      if(curDay&&curStore&&qty!==0&&!excluir(s)){
-        const canon=normalizeProd(s);
-        if(canon==='__EXCLUIR__') continue;
+        // Formats A and 2025: have store level
+        if(!curStore) continue;
         if(!byStoreDayProd[curStore]) byStoreDayProd[curStore]={};
         if(!byStoreDayProd[curStore][curDay]) byStoreDayProd[curStore][curDay]={};
         byStoreDayProd[curStore][curDay][canon]=(byStoreDayProd[curStore][curDay][canon]||0)+qty;
         if(!byStoreDay[curStore]) byStoreDay[curStore]={};
         byStoreDay[curStore][curDay]=(byStoreDay[curStore][curDay]||0)+qty;
+        storesInFile.add(curStore);
       }
     }
   }
 
-  // ── DETERMINE WHICH MONTHS/STORES ARE IN THIS FILE ─────────────────────
-  const allDates=new Set();
-  if(formatA) Object.values(byStoreDay).forEach(sd=>Object.keys(sd).forEach(d=>allDates.add(d)));
-  else Object.keys(byDayTotal).forEach(d=>allDates.add(d));
+  console.log('Months in file:', Array.from(monthsInFile).sort());
+  console.log('Stores in file:', Array.from(storesInFile));
+  console.log('Format:', fmt, '| Dates parsed:', fmt==='B'?Object.keys(byDayTotal).length:Object.keys(byStoreDay).length?'(by store)':0);
 
-  const monthsInFile=new Set();
-  allDates.forEach(d=>{const mi=parseInt(d.split('-')[1])-1; monthsInFile.add(mi);});
-  const storesInFile=new Set(formatA?Object.keys(byStoreDayProd):ACTIVE);
-
-  console.log('Months in file:', [...monthsInFile].sort());
-  console.log('Stores in file:', [...storesInFile]);
-  console.log('Total dates:', allDates.size);
-
-  const targetD = year==='2025'?D25:D26;
-  const targetYear = year;
-
-  // ── 1. UPDATE DAILY ──────────────────────────────────────────────────────
+  const targetD=year==='2025'?D25:D26;
+  const targetYear=year;
   if(!DAILY[targetYear]) DAILY[targetYear]={};
 
-  if(formatA){
-    // Direct store data
-    Object.entries(byStoreDay).forEach(([store,days])=>{
-      if(!DAILY[targetYear][store]) DAILY[targetYear][store]={};
-      Object.entries(days).forEach(([dateStr,qty])=>{
-        if(qty<=0) return;
-        const mi=String(parseInt(dateStr.split('-')[1])-1);
-        if(!DAILY[targetYear][store][mi]) DAILY[targetYear][store][mi]={};
-        DAILY[targetYear][store][mi][dateStr]=qty;
-      });
-    });
-  } else {
-    // Format B: distribute by store proportion
-    const storeH1={};
-    let h1Total=0;
+  // ── 1. UPDATE DAILY ──────────────────────────────────────────────────────
+  if(fmt==='B'){
+    // Distribute empresa total proportionally by store
+    const storeH1={};let h1Total=0;
     ACTIVE.forEach(s=>{
       const t=[0,1,2,3,4,5].reduce((a,mi)=>{const v=targetD[s]&&targetD[s][mi];return a+(v||0);},0);
       storeH1[s]=t; h1Total+=t;
     });
     Object.entries(byDayTotal).forEach(([dateStr,empQty])=>{
-      if(empQty<=0) return;
+      if(!empQty) return;
       const mi=String(parseInt(dateStr.split('-')[1])-1);
       ACTIVE.forEach(s=>{
         const prop=h1Total>0?(storeH1[s]/h1Total):1/ACTIVE.length;
         const sq=Math.round(empQty*prop);
-        if(sq<=0) return;
+        if(!sq) return;
         if(!DAILY[targetYear][s]) DAILY[targetYear][s]={};
         if(!DAILY[targetYear][s][mi]) DAILY[targetYear][s][mi]={};
         DAILY[targetYear][s][mi][dateStr]=sq;
         if(!byStoreDay[s]) byStoreDay[s]={};
         byStoreDay[s][dateStr]=(byStoreDay[s][dateStr]||0)+sq;
+        storesInFile.add(s);
+      });
+    });
+  } else {
+    // Formats A and 2025: direct store data — ONLY update stores in this file
+    Object.entries(byStoreDay).forEach(([store,days])=>{
+      if(!DAILY[targetYear][store]) DAILY[targetYear][store]={};
+      Object.entries(days).forEach(([dateStr,qty])=>{
+        if(!qty) return;
+        const mi=String(parseInt(dateStr.split('-')[1])-1);
+        if(!DAILY[targetYear][store][mi]) DAILY[targetYear][store][mi]={};
+        // Only update if new value is different (replace, not accumulate)
+        DAILY[targetYear][store][mi][dateStr]=qty;
       });
     });
   }
 
-  // ── 2. UPDATE D25/D26 MONTHLY TOTALS ────────────────────────────────────
-  // Only update months that appear in this file, only stores in this file
+  // ── 2. UPDATE D25/D26 MONTHLY TOTALS ─────────────────────────────────────
+  // ONLY for months AND stores that actually appear in this file
+  const storesToUpdate=fmt==='B'?ACTIVE:Array.from(storesInFile);
   monthsInFile.forEach(mi=>{
-    (formatA?[...storesInFile]:ACTIVE).forEach(s=>{
+    storesToUpdate.forEach(s=>{
       if(!targetD[s]) return;
-      // Sum daily data for this store+month
       const monStr=String(mi);
       const monData=DAILY[targetYear]&&DAILY[targetYear][s]&&DAILY[targetYear][s][monStr];
       if(monData&&Object.keys(monData).length>0){
@@ -1347,134 +1341,95 @@ async function parseAI(raw, year){
     });
   });
 
-  // ── 3. UPDATE ZOA_DATA (IDX25/IDX26) ────────────────────────────────────
+  // ── 3. UPDATE ZOA_DATA IDX ────────────────────────────────────────────────
   const targetIdx=year==='2025'?ZOA_DATA.idx25:ZOA_DATA.idx26;
   const prods=ZOA_DATA.products;
   const stores=ZOA_DATA.stores;
 
-  // Add new products to ZOA_DATA if needed
   function getProdIdx(canon){
     let pi=prods.indexOf(canon);
     if(pi===-1){pi=prods.length;prods.push(canon);}
     return pi;
   }
-  function getStoreIdx(store){return stores.indexOf(store);}
 
-  // Helper: distribute empresa products to stores proportionally
-  function distributeToStores(dateStr,prodQtyMap,storeList,storeProportions,idx){
-    if(!idx[dateStr]) idx[dateStr]={};
-    storeList.forEach(s=>{
-      const si=getStoreIdx(s);
-      if(si===-1) return;
-      const prop=storeProportions[s]||0;
-      if(prop<=0) return;
-      const siStr=String(si);
-      if(!idx[dateStr][siStr]) idx[dateStr][siStr]={};
-      Object.entries(prodQtyMap).forEach(([canon,qty])=>{
-        const storeQty=Math.round(qty*prop);
-        if(storeQty<=0) return;
-        const pi=String(getProdIdx(canon));
-        idx[dateStr][siStr][pi]=(idx[dateStr][siStr][pi]||0)+storeQty;
-      });
+  if(fmt==='B'){
+    // Distribute by store proportion
+    const storeH1B={};let h1TB=0;
+    ACTIVE.forEach(s=>{
+      const t=[0,1,2,3,4,5].reduce((a,mi)=>{const v=targetD[s]&&targetD[s][mi];return a+(v||0);},0);
+      storeH1B[s]=t; h1TB+=t;
     });
-  }
-
-  if(formatA){
-    // Direct: store→day→product→qty
-    Object.entries(byStoreDayProd).forEach(([store,days])=>{
-      const si=getStoreIdx(store);
-      if(si===-1) return;
-      const siStr=String(si);
-      Object.entries(days).forEach(([dateStr,prods_])=>{ 
-        if(!targetIdx[dateStr]) targetIdx[dateStr]={};
-        if(!targetIdx[dateStr][siStr]) targetIdx[dateStr][siStr]={};
-        Object.entries(prods_).forEach(([canon,qty])=>{
-          if(qty<=0) return;
+    Object.entries(byDayProd).forEach(([dateStr,prodMap])=>{
+      if(!targetIdx[dateStr]) targetIdx[dateStr]={};
+      ACTIVE.forEach(s=>{
+        const si=String(stores.indexOf(s));
+        if(si==='-1') return;
+        const prop=h1TB>0?(storeH1B[s]/h1TB):1/ACTIVE.length;
+        if(!targetIdx[dateStr][si]) targetIdx[dateStr][si]={};
+        Object.entries(prodMap).forEach(([canon,qty])=>{
+          const sq=Math.round(qty*prop);
+          if(!sq) return;
           const pi=String(getProdIdx(canon));
-          targetIdx[dateStr][siStr][pi]=(targetIdx[dateStr][siStr][pi]||0)+qty;
+          targetIdx[dateStr][si][pi]=(targetIdx[dateStr][si][pi]||0)+sq;
         });
       });
     });
   } else {
-    // Format B: distribute empresa products to stores
-    const storeH1B={};let h1TotalB=0;
-    ACTIVE.forEach(s=>{
-      const t=[0,1,2,3,4,5].reduce((a,mi)=>{const v=targetD[s]&&targetD[s][mi];return a+(v||0);},0);
-      storeH1B[s]=t; h1TotalB+=t;
-    });
-    const props={};
-    ACTIVE.forEach(s=>props[s]=h1TotalB>0?storeH1B[s]/h1TotalB:1/ACTIVE.length);
-    Object.entries(byDayProd).forEach(([dateStr,prodMap])=>{
-      distributeToStores(dateStr,prodMap,ACTIVE,props,targetIdx);
+    // Direct store data
+    Object.entries(byStoreDayProd).forEach(([store,days])=>{
+      const si=String(stores.indexOf(store));
+      if(si==='-1') return;
+      Object.entries(days).forEach(([dateStr,prodMap])=>{
+        if(!targetIdx[dateStr]) targetIdx[dateStr]={};
+        if(!targetIdx[dateStr][si]) targetIdx[dateStr][si]={};
+        Object.entries(prodMap).forEach(([canon,qty])=>{
+          if(!qty) return;
+          const pi=String(getProdIdx(canon));
+          targetIdx[dateStr][si][pi]=(targetIdx[dateStr][si][pi]||0)+qty;
+        });
+      });
     });
   }
 
-  // ── 4. UPDATE SUPPLIER_DATA ──────────────────────────────────────────────
-  // Rebuild SUPPLIER_DATA for months in this file
+  // ── 4. UPDATE SUPPLIER_DATA ───────────────────────────────────────────────
   const SD=SUPPLIER_DATA[targetYear];
   if(SD){
-    // For each product×store in IDX, reclassify and accumulate to SUPPLIER_DATA
+    function getSupplier(canon){
+      const u=canon.toUpperCase();
+      if(['JEANS LINEA','JEANS PREMIUM','JEANS PREMIUM DAMA','JEANS DELUX','JEANS KID','JEANS OFERTA',
+          'SHORT CABALLERO','SHORT DAMA','SHORT PRO'].some(g=>u.startsWith(g.toUpperCase()))) return 'Gomex';
+      if(['C PRIME','D PRIME','JEANS C PRO'].some(g=>u.startsWith(g.toUpperCase()))) return 'Pamex';
+      return 'Promex';
+    }
     // Reset months in file for supplier data
     monthsInFile.forEach(mi=>{
       ['Gomex','Pamex','Promex'].forEach(sup=>{
         Object.keys(SD[sup]||{}).forEach(prod=>{
-          if(SD[sup][prod].m) SD[sup][prod].m[mi]=0;
+          if(SD[sup][prod]&&SD[sup][prod].m) SD[sup][prod].m[mi]=0;
         });
       });
     });
-
-    // Re-accumulate from ZOA_DATA for updated months
-    // Use byStoreDayProd (format A) or distributed data
-    const getSupplier=function(canon){
-      const u=canon.toUpperCase();
-      if(u.startsWith('JEANS L')||u.startsWith('JEANS PREMIUM')||u.startsWith('JEANS P ')||
-         u.startsWith('JEANS DELUX')||u.startsWith('JEANS KID')||u.startsWith('JEANS BÁSICO')||
-         u.startsWith('SHORT CABALLERO')||u.startsWith('SHORT DAMA')||u.startsWith('SHORT PRO')){
-        return 'Gomex';
-      }
-      if(u.startsWith('C PRIME')||u.startsWith('D PRIME')||u.startsWith('JEANS C PRO')){
-        return 'Pamex';
-      }
-      if(['JEANS W','JEANS COLOMBIANO','LOLA','MONKEY','JEANS DS','JEANS AM&CO',
-          'JEANS TR','JEANS SHERMAN','POLO SM','PLAYERA SM','CAMISA SM','CAMISA OAKTREE',
-          'CAMISA BOSS','CAMISA BURBERRY','CHAMARRA W','CHAMARRA SM','CHAMARRA NFL',
-          'SHORT POLO','BOLSA PREMIUM','BOLSA DELUX','BOLSA ECO','PIMA'].some(x=>u.startsWith(x))){
-        return 'Promex';
-      }
-      return 'Pamex';
-    };
-
-    // Get all source records for updated months
-    const sourceRecs=formatA?byStoreDayProd:null;
-    if(formatA){
-      Object.entries(byStoreDayProd).forEach(([store,days])=>{
-        Object.entries(days).forEach(([dateStr,prods_])=>{
-          const mi=parseInt(dateStr.split('-')[1])-1;
-          if(!monthsInFile.has(mi)) return;
-          Object.entries(prods_).forEach(([canon,qty])=>{
-            if(qty<=0) return;
-            const sup=getSupplier(canon);
-            if(!SD[sup]) SD[sup]={};
-            if(!SD[sup][canon]) SD[sup][canon]={t:0,m:[0,0,0,0,0,0,0,0,0,0,0,0],s:{}};
-            SD[sup][canon].m[mi]=(SD[sup][canon].m[mi]||0)+qty;
-            SD[sup][canon].s[store]=(SD[sup][canon].s[store]||0)+qty;
-          });
-        });
+    // Re-accumulate
+    const srcRecs=fmt==='B'?byDayProd:null;
+    const processEntry=(dateStr,store,prodMap)=>{
+      const mi=parseInt(dateStr.split('-')[1])-1;
+      if(!monthsInFile.has(mi)) return;
+      Object.entries(prodMap).forEach(([canon,qty])=>{
+        if(!qty) return;
+        const sup=getSupplier(canon);
+        if(!SD[sup]) SD[sup]={};
+        if(!SD[sup][canon]) SD[sup][canon]={t:0,m:[0,0,0,0,0,0,0,0,0,0,0,0],s:{}};
+        SD[sup][canon].m[mi]=(SD[sup][canon].m[mi]||0)+qty;
+        if(store) SD[sup][canon].s[store]=(SD[sup][canon].s[store]||0)+qty;
       });
+    };
+    if(fmt==='B'){
+      Object.entries(byDayProd).forEach(([ds,pm])=>processEntry(ds,null,pm));
     } else {
-      Object.entries(byDayProd).forEach(([dateStr,prodMap])=>{
-        const mi=parseInt(dateStr.split('-')[1])-1;
-        if(!monthsInFile.has(mi)) return;
-        Object.entries(prodMap).forEach(([canon,qty])=>{
-          if(qty<=0) return;
-          const sup=getSupplier(canon);
-          if(!SD[sup]) SD[sup]={};
-          if(!SD[sup][canon]) SD[sup][canon]={t:0,m:[0,0,0,0,0,0,0,0,0,0,0,0],s:{}};
-          SD[sup][canon].m[mi]=(SD[sup][canon].m[mi]||0)+qty;
-        });
+      Object.entries(byStoreDayProd).forEach(([store,days])=>{
+        Object.entries(days).forEach(([ds,pm])=>processEntry(ds,store,pm));
       });
     }
-    // Recalculate totals
     ['Gomex','Pamex','Promex'].forEach(sup=>{
       Object.keys(SD[sup]||{}).forEach(prod=>{
         SD[sup][prod].t=SD[sup][prod].m.reduce((a,b)=>a+(b||0),0);
@@ -1482,13 +1437,15 @@ async function parseAI(raw, year){
     });
   }
 
-  // ── 5. RENDER ALL MODULES ────────────────────────────────────────────────
-  console.log('Parse complete. Updating all modules...');
+  // ── 5. RENDER ALL MODULES ─────────────────────────────────────────────────
+  const months=Array.from(monthsInFile);
+  const stores_=Array.from(storesInFile);
+  console.log(`\u2713 Updated: ${months.length} months, ${stores_.length} stores, format=${fmt}`);
   renderAll();
-  if(curView==='ranking') renderRanking();
-  if(curView==='prodgen') renderProdGen();
-  if(curView==='diario') renderDiario();
-  if(curView==='ideal') renderIdeal();
+  if(curView==='ranking') setTimeout(renderRanking,50);
+  if(curView==='prodgen') setTimeout(renderProdGen,50);
+  if(curView==='diario') setTimeout(renderDiario,50);
+  if(curView==='ideal') setTimeout(renderIdeal,50);
 }
 
 function resetData(){if(!isAdmin||!confirm('¿Restablecer datos?'))return;const o={'Líneas':[6590,6669,7786,7059,6997,7903,null,null,null,null,null,null],'M A':[7227,7093,7129,6223,7213,7553,null,null,null,null,null,null],'Club':[1738,1274,1617,1260,1460,1428,null,null,null,null,null,null],'DM':[197,3188,5787,2932,3295,2846,null,null,null,null,null,null],'Zapotlanejo':[858,516,556,519,529,614,null,null,null,null,null,null],'ELITE':[3149,1859,1731,1651,1593,1943,null,null,null,null,null,null]};SUCS.forEach(s=>{D26[s]=[...o[s]];});document.getElementById('files25').innerHTML='';document.getElementById('files26').innerHTML='';renderAll();}
