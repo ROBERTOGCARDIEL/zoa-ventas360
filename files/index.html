@@ -701,6 +701,350 @@ function logoutAdmin(){
 }
 setTimeout(()=>{if(!isAdmin)document.getElementById('admEntryBtn').style.display='flex';},1500);
 
+
+// ── UTILITIES (ver constantes arriba) ─────────────────────────────────────
+
+// ── NORMALIZEPROD JS ──────────────────────────────────────────────────────────
+function normalizeProd(raw){
+  var u=raw.toUpperCase().trim(),cat='';
+  var bm=u.match(/^\[([^\]]+)\]\s*(.*)/);
+  if(bm){cat=bm[1].trim();u=bm[2].trim();}
+  var pm=u.match(/^(.+?)\s*\((.+)\)\s*$/);
+  var base=pm?pm[1].trim():u,inside=pm?pm[2].trim():'';
+  var ins=inside,b=base;
+  if(u.includes('ORIGO')) return '__EXCLUIR__';
+  if(u.includes('SUSEX')) return 'Jeans Susex';
+  if(/^CHALECO\b/.test(b)) return 'Chaleco SM';
+  if(u.includes('PRUEBA')&&(u.includes('JEANS')||cat.includes('JEANS'))) return 'Jeans Premium';
+  if(u.trim()==='.') return 'Jeans Linea';
+  if(/^JEANS L\b/.test(b)||/^JEANS LIN/.test(b)||b==='JEANS F'||cat.includes('JEANS LIN')||cat.includes('JEANS L')) return 'Jeans Linea';
+  if(/^JEANS P\b/.test(b)||/^JEANS PREM/.test(b)||/^JEANS PREMIUM\b/.test(b)||cat.includes('JEANS P')){
+    if(['DAMA','DAM','DREAMY DRAPE','BAGGY','WIDE LEG'].some(function(x){return ins.includes(x);})||b.includes('DAMA')||cat.includes('DAMA')) return 'Jeans Premium Dama';
+    return 'Jeans Premium';
+  }
+  if(/^JEANS DELUXE? PRO\b/.test(b)||/^JEANS DLX PRO\b/.test(b)||/^C\.? ?PRO DELUX\b/.test(b)||/^C\.? ?DELUX PRO\b/.test(b)||/^JEANS C\.?PRO\b/.test(b)||/^C DELUX PRO\b/.test(b)||cat.includes('CPRO')||cat.includes('C.PRO')) return 'Jeans C Pro Delux';
+  if(/^JEANS DLX\b/.test(b)||/^JEANS DELUX/.test(b)||cat.includes('JEANS DLX')||cat.includes('JEANS DELUX')) return 'Jeans Delux';
+  if(/^C\.? ?PRIME\b/.test(b)||/^JEANS C\.? ?PRIME\b/.test(b)||cat.includes('C.PRIME')||cat.includes('C PRIME')) return 'C Prime';
+  if(/^D\.? ?PRIME\b/.test(b)||/^JEANS D\.? ?PRIME\b/.test(b)||cat.includes('D.PRIME')||cat.includes('D PRIME')) return 'D Prime';
+  if(/^JEANS KID\b/.test(b)||cat.includes('JEANS KID')||u.includes('JNS KID')||cat.includes('JEANSSHORT')) return 'Jeans Kid';
+  if(/^JEANS B[AÁ]SICO\b/.test(b)||/^JEANS OFERTA\b/.test(b)) return 'Jeans Oferta';
+  var isJW=/^JEANS W\b/.test(b)||/^JEANS WOMAN\b/.test(b)||b==='WOMAN'||cat.includes('JEANS W')||cat.includes('JEANS DAMA');
+  if(isJW){
+    if(ins.includes('COLOMBIANO')||ins.includes('BOGOTA')) return 'Jeans Colombiano';
+    if(ins.includes('LOLA')) return 'Lola';
+    if(ins.includes('MONKEY')) return 'Monkey';
+    if(ins.trim()==='DS') return 'Jeans DS';
+    if(ins.includes('AM&CO')||ins.includes('MA&CO')) return 'Jeans AM&CO';
+    if(ins.includes('STRIGHT')||ins.includes('STRAIGHT')||ins.includes('STRAIGH')||b.includes('STRIGHT')||b.includes('STRAIGHT')) return 'Jeans W Straight';
+    if(ins.includes('POLO')||ins.includes('STUCHY')) return 'Jeans W';
+    return 'Jeans W';
+  }
+  if(u.includes('JEANS W STRIGHT')||u.includes('JEANS W STRAIGHT')||u.includes('JEANS W STRAIGH')) return 'Jeans W Straight';
+  if(b.includes('COLOMBIANO')||b.includes('BOGOTA')) return 'Jeans Colombiano';
+  if(b==='LOLA'||cat.includes('LOLA')) return 'Lola';
+  if(b==='MONKEY'||cat.includes('MONKEY')) return 'Monkey';
+  if(b==='JEANS DS'||(ins==='DS'&&b.includes('JEANS'))||cat.includes('JEANS DS')) return 'Jeans DS';
+  if(u.includes('AM&CO')||u.includes('MA&CO')) return 'Jeans AM&CO';
+  if(u.includes('SHERMAN')&&u.includes('JEANS')&&!['CAMISA','POLO','PLAYERA','CHAMARRA','SUDADERA'].some(function(x){return u.includes(x);})) return 'Jeans Sherman';
+  if(/^JEANS TR\b/.test(b)||u.includes('TRUE RELIGION')||cat.includes('JEANS TR')) return 'Jeans TR';
+  if(b.includes('SHORT')||cat.includes('SHORT')){
+    if(ins.includes('POLO')||b.includes('POLO')) return 'Short Polo';
+    if(ins.includes('DAMA')||ins.includes('DAM')||b.includes('DAMA')) return 'Short Dama';
+    if(ins.includes('PRO')||b.includes('PRO')) return 'Short Pro';
+    if(['LEVIS','TIMBERLAND','MK','CK','TOMMY','BOSS','AE'].some(function(x){return ins.includes(x);})) return 'Short Marcas';
+    if(ins.includes('412')||ins.includes('468')||ins.includes('CAB')) return 'Short Caballero';
+    if(ins.includes('PREM')) return 'Short Premium';
+    if(ins.includes('MARCAS')||b.includes('MARCAS')) return 'Short Marcas';
+    return 'Short Caballero';
+  }
+  if(cat.includes('PYSUETER')||u.includes('TIPO SUETER')||u.includes('TIPO SUÉTER')) return 'Playera Tipo Suéter';
+  if(u.includes('OVER SM')||cat.includes('PLOVERSM')||(b.includes('OVER')&&b.includes('SM'))) return 'Playera Over SM';
+  if(u.includes('PLAYERA SM')||u.includes('PLAYERA SHERMAN')||cat.includes('PLAYERA SM')||((b.includes('PLAYERA')||b.includes('PLAYERAS'))&&(u.includes('SHERMAN')||ins==='SM'))) return 'Playera SM';
+  if(b==='PLAYERA OVER'||cat.includes('PLAYERA OVER')||(b.includes('PLAYERA')&&b.includes('OVER')&&!u.includes('SM'))||(ins.includes('OVER')&&!ins.includes('SM')&&(b.includes('PLAYERA')||b.includes('PLAYERAS')))) return 'Playera Over';
+  if(b.includes('PLAYERA')||b.includes('PLAYERAS')||b.includes('PYML')||b.includes('PYP')||cat.includes('PLAYERA')){
+    if(ins.includes('DAMA')||ins.includes('DAM')||ins.includes('WOMAN')||b.includes('WOMAN')||b.includes('ML W')||b.includes('MANGA LARGA W')){
+      if(ins.includes('PREMIUM')||ins.includes('PREM')) return 'Playeras Premium';
+      if(ins.includes('LINEA')||ins.includes('LIN')) return 'Playeras Linea';
+      return 'Playeras Woman';
+    }
+    if(ins.includes('MANGA LARGA')||b.includes('PYML')||b.includes('MANGA LARGA')||(b.includes('ML')&&!b.includes('DLX')&&!b.includes('W'))) return 'Playeras Manga Larga';
+    if(ins.includes('PREM')||ins.includes('PREMIUM')||b.includes('PREM')||b.includes('PREMIUM')||b.includes('PYP')) return 'Playeras Premium';
+    if(ins.includes('DELUX')||ins.includes('DLX')||b.includes('DELUX')||b.includes('PYDLX')) return 'Playeras Delux';
+    if(ins.includes('KID')||b.includes('KID')) return 'Playera Kid';
+    if(ins.includes('DIAMANTE')||b.includes('DIAMANTE')) return 'Playeras Diamante';
+    if(ins.includes('LINEA')||ins.includes('LIN')||b.includes('LINEA')||/^PLAYERAS? L$/.test(b)) return 'Playeras Linea';
+    if(ins.includes('OVER')||b.includes('OVER')) return 'Playera Over';
+    return 'Playeras Premium';
+  }
+  if(/^POLO\b/.test(b)||cat.includes('POLO')){
+    if(ins.includes('DELUX')||ins.includes('DLX')||b.includes('DELUX')||cat.includes('POLODLX')) return 'Polo Delux';
+    if(ins.includes('TOMMY')) return 'Polo Delux';
+    if(ins.includes('PREM')||ins.includes('PREMIUM')) return 'Polo Premium';
+    if(ins.includes('SM')||ins.includes('SHERMAN')||cat.includes('POLO SM')||cat.includes('POLOSM')||b.includes('INDIA')||ins.includes('INDIA')) return 'Polo SM';
+    return 'Polo';
+  }
+  if(/^CAMISA\b/.test(b)||/^CAM\b/.test(b)||cat.includes('CAMISA')||cat.includes('CAMISAS')){
+    if(ins.includes('OAKTREE')||u.includes('OAKTREE')) return 'Camisa Oaktree';
+    if(ins.includes('BOSS')||b.includes('BOSS')) return 'Camisa Boss';
+    if(ins.includes('BURBERRY')||b.includes('BURBERRY')) return 'Camisa Burberry';
+    if(ins.includes('SM')||ins.includes('SHERMAN')||b.includes('SHERMAN')) return 'Camisa SM';
+    return 'Camisa';
+  }
+  if(u.includes('CAPITON')){
+    if(ins.includes('LINEA')||ins.includes('LIN')||b.includes('LINEA')) return 'Capitonada Linea';
+    if(ins.includes('PREMIUM')||ins.includes('PREM')||b.includes('PREMIUM')) return 'Capitonada Premium';
+    if(ins.includes('DELUX')||ins.includes('DLX')||b.includes('DELUX')) return 'Capitonada Delux';
+    if(ins.includes('ECO')||b.includes('ECO')) return 'Capitonada Eco';
+    return 'Capitonada Premium';
+  }
+  if(b.includes('CHAMARRA')||cat.includes('CHM')){
+    if(cat.includes('CAP')||(b.includes('CAP')&&b.includes('CHAMARRA CAP'))){
+      if(b.includes('SM')||u.includes('SHERMAN')){
+        if(b.includes(' L')||b.includes('LIN')) return 'Chamarra SM L';
+        if(b.includes(' P')||b.includes('PREM')) return 'Chamarra SM P';
+        return 'Chamarra SM';
+      }
+      if(b.endsWith(' L')||b.includes('LINEA')||cat==='CHM CAP L'||cat.includes('CHM CAP L')) return 'Capitonada Linea';
+      if(b.endsWith(' P')||b.includes('PREM')||cat==='CHM CAP P') return 'Capitonada Premium';
+      if(b.includes('DELUX')||b.includes('DLX')||cat.includes('CHM CAP DLX')) return 'Capitonada Delux';
+      return 'Capitonada Premium';
+    }
+    if(b.includes('NFL')||ins.includes('NFL')){
+      if(b.includes('PREMIUM')||b.includes('PREM')) return 'Chamarra NFL Premium';
+      return 'Chamarra NFL Delux';
+    }
+    if(b.includes('BORREGA')) return 'Chamarra SM Borrega';
+    if((b.includes('MEZCLILLA')&&b.includes('WOMAN'))||b.includes('CHAMARRA W')||cat.includes('CHM W')) return 'Chamarra W';
+    if(u.includes('SHERMAN')||(b.endsWith(' SM')&&b.includes('CHAMARRA'))) return 'Chamarra SM';
+    if(b.includes('LINEA')||ins.includes('LIN')||cat.includes('CHM L')||(b.includes('MEZCLILLA')&&!b.includes('WOMAN'))) return 'Chamarra Linea';
+    if(b.includes('PREMIUM')||ins.includes('PREM')||cat.includes('CHM P')) return 'Chamarra Premium';
+    if(b.includes('DELUX')||ins.includes('DLX')) return 'Chamarra Delux';
+    return 'Chamarra';
+  }
+  if(u.includes('SUETER')||u.includes('SUÉTER')) return 'Suéter';
+  if(u.includes('SUDADERA')){
+    if(u.includes('SHERMAN')||b.endsWith(' SM')||cat.includes('SUDADERA SM')) return 'Sudadera SM';
+    return 'Sudadera';
+  }
+  if(u.includes('CHALECO')) return 'Chaleco SM';
+  if(/^PIMA\b/.test(b)) return 'Pima';
+  if(u.includes('TENIS')) return 'Tenis';
+  if(/^BOLSA/.test(b)||/^BOLSAS/.test(b)||/^BLS/.test(b)||cat.includes('BLS')){
+    if(ins.includes('PREM')||b.includes('PREMIUM')) return 'Bolsa Premium';
+    if(ins.includes('DELUX')||ins.includes('DLX')||b.includes('DELUX')) return 'Bolsa Delux';
+    if(ins.includes('ECO')||b.includes('ECO')) return 'Bolsa Eco';
+    if(ins.includes('LINEA')||b.includes('LINEA')) return 'Bolsa Linea';
+    return 'Bolsa';
+  }
+  return inside?base.charAt(0).toUpperCase()+base.slice(1).toLowerCase()+' ('+inside.charAt(0).toUpperCase()+inside.slice(1).toLowerCase()+')':base.charAt(0).toUpperCase()+base.slice(1).toLowerCase();
+}
+
+// ── RENDER DETALLE ────────────────────────────────────────────────────────────
+function renderDetalle(){
+  var ml=gML(),sucs=gSL();
+  var allSucs=[].concat(SUCS_ALL_2025,SUCS_ALL_2026).filter(function(v,i,a){return a.indexOf(v)===i;});
+  if(gS()==='all') sucs=allSucs;
+  var html='';
+  ml.forEach(function(m){
+    sucs.forEach(function(s,si){
+      var v25=D25[s]?D25[s][m]:0;
+      var v26=D26[s]?D26[s][m]:null;
+      var diff=v26!=null?v26-v25:null;
+      var pct=diff!=null&&v25>0?((diff/v25)*100).toFixed(1):null;
+      var mesCell=si===0?'<td rowspan="'+sucs.length+'" style="font-weight:600;color:var(--gold);vertical-align:top;padding-top:10px">'+MES[m]+'</td>':'';
+      var diffCell=diff!=null?(diff>=0?'+':'')+fmt(diff):'—';
+      var pctCell=pct!=null?'<span class="badge '+(isUp(pct)?'bg-up':'bg-dn')+'">'+(isUp(pct)?'↑':'↓')+' '+Math.abs(pct)+'%</span>':'<span class="td-na">—</span>';
+      html+='<tr>'+mesCell+'<td><span class="sdot" style="background:'+(SCOL[s]||'#888')+'"></span>'+(SN[s]||s)+'</td>'+'<td>'+(v25?fmt(v25):'—')+'</td>'+'<td>'+(v26!=null?fmt(v26):'<span class="td-na">—</span>')+'</td>'+'<td class="'+(diff!=null?(isUp(diff)?'td-up':'td-dn'):'td-na')+'">'+diffCell+'</td>'+'<td>'+pctCell+'</td></tr>';
+    });
+  });
+  var tb=document.getElementById('tbDet')||document.getElementById('tbDetalle');
+  if(tb) tb.innerHTML=html||'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--tx3)">Sin datos</td></tr>';
+}
+
+// ── RENDER DIARIO ─────────────────────────────────────────────────────────────
+function renderDiario(){
+  var _dm=document.getElementById('dMesSelect');
+  var _ds=document.getElementById('dSucSelect');
+  var mes=_dm?_dm.value:gM();
+  var suc=_ds?_ds.value:gS();
+  var mi=parseInt(mes);
+  if(mes==='all'){var tb=document.getElementById('tbDiario');if(tb)tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--tx3)">Selecciona un mes para ver el comparativo diario</td></tr>';return;}
+  var _allS=SUCS_ALL_2025.concat(SUCS_ALL_2026).filter(function(v,i,a){return a.indexOf(v)===i;});
+  var sucs=suc==='all'?_allS:[suc];
+  var days25={},days26={};
+  sucs.forEach(function(s){
+    var d25m=(DAILY['2025']&&DAILY['2025'][s]&&DAILY['2025'][s][String(mi)])||{};
+    var d26m=(DAILY['2026']&&DAILY['2026'][s]&&DAILY['2026'][s][String(mi)])||{};
+    Object.entries(d25m).forEach(function(e){var dk=e[0].substring(5);days25[dk]=(days25[dk]||0)+e[1];});
+    Object.entries(d26m).forEach(function(e){var dk=e[0].substring(5);days26[dk]=(days26[dk]||0)+e[1];});
+  });
+  var allDays=Object.keys(Object.assign({},days25,days26)).sort();
+  var t25=Object.values(days25).reduce(function(a,b){return a+b;},0);
+  var t26=Object.values(days26).reduce(function(a,b){return a+b;},0);
+  var diff=t26-t25,pct=t25>0?((diff/t25)*100).toFixed(1):null;
+  var kpi=document.getElementById('dMetrics')||document.getElementById('diarioKpi');
+  if(kpi) kpi.innerHTML='<div class="mc gold"><div class="mc-lbl">Total 2025</div><div class="mc-val">'+fmt(t25)+'</div><div class="mc-sub"><span class="badge bg-gd">piezas</span></div></div>'+'<div class="mc '+(isUp(pct)?'up':'dn')+'"><div class="mc-lbl">Total 2026</div><div class="mc-val">'+fmt(t26)+'</div><div class="mc-sub">'+(pct!=null?'<span class="badge '+(isUp(pct)?'bg-up':'bg-dn')+'">'+(isUp(pct)?'↑':'↓')+' '+Math.abs(pct)+'%</span>':'')+'</div></div>'+'<div class="mc '+(isUp(diff)?'up':'dn')+'"><div class="mc-lbl">Diferencia</div><div class="mc-val">'+(diff>=0?'+':'')+fmt(diff)+'</div><div class="mc-sub"><span class="badge bg-n">piezas</span></div></div>'+'<div class="mc neu"><div class="mc-lbl">Días 2026</div><div class="mc-val">'+Object.keys(days26).length+'</div><div class="mc-sub"><span class="badge bg-n">con datos</span></div></div>';
+  var tb_html='';
+  allDays.forEach(function(d){
+    var day=parseInt(d.split('-')[1]);
+    var q25=days25[d]||0,q26=days26[d]!=null?days26[d]:null;
+    var df=q26!=null?q26-q25:null,pp=df!=null&&q25>0?((df/q25)*100).toFixed(1):null;
+    tb_html+='<tr><td style="font-weight:600;color:var(--gold)">'+day+'</td><td>'+(q25?fmt(q25):'—')+'</td><td>'+(q26!=null?fmt(q26):'<span class="td-na">—</span>')+'</td><td class="'+(df!=null?(isUp(df)?'td-up':'td-dn'):'td-na')+'">'+(df!=null?(df>=0?'+':'')+fmt(df):'—')+'</td><td>'+(pp!=null?'<span class="badge '+(isUp(pp)?'bg-up':'bg-dn')+'">'+(isUp(pp)?'↑':'↓')+' '+Math.abs(pp)+'%</span>':'<span class="td-na">—</span>')+'</td></tr>';
+  });
+  var tb=document.getElementById('tbDiario');
+  if(tb) tb.innerHTML=tb_html||'<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--tx3)">Sin datos</td></tr>';
+}
+
+// ── QUERY IDX ─────────────────────────────────────────────────────────────────
+function qIdx(idx,from,to,sf,mi){
+  var res={};
+  for(var ds in idx){
+    if(from&&ds<from)continue;if(to&&ds>to)continue;
+    if(mi!==null&&mi!==undefined&&parseInt(ds.split('-')[1])-1!==mi)continue;
+    var sv=idx[ds];
+    for(var si in sv){
+      if(sf!=='all'&&ZOA_DATA.stores[parseInt(si)]!==sf)continue;
+      var pv=sv[si];for(var pi in pv)res[pi]=(res[pi]||0)+pv[pi];
+    }
+  }
+  return res;
+}
+
+// ── RENDER RANKING ────────────────────────────────────────────────────────────
+function renderRanking(){
+  var yrEl=document.getElementById('rkYr');if(!yrEl)return;
+  var yr=yrEl.value,mes=document.getElementById('rkMes').value;
+  var suc=document.getElementById('rkSuc').value,topN=parseInt(document.getElementById('rkTop').value)||9999;
+  var search=(document.getElementById('rkSearch').value||'').toLowerCase();
+  var mi=mes==='all'?null:parseInt(mes);
+  var cur={},cmp={};
+  if(yr==='2025'){cur=qIdx(ZOA_DATA.idx25,'2025-01-01','2025-12-31',suc,mi);}
+  else if(yr==='2026'){cur=qIdx(ZOA_DATA.idx26,'2026-01-01','2026-08-31',suc,mi);cmp=qIdx(ZOA_DATA.idx25,'2025-01-01','2025-08-31',suc,mi);}
+  else{cur=qIdx(ZOA_DATA.idx26,'2026-01-01','2026-08-31',suc,mi);cmp=qIdx(ZOA_DATA.idx25,'2025-01-01','2025-08-31',suc,mi);}
+  var ml_rk=mi===null?[0,1,2,3,4,5,6,7,8,9,10,11]:[mi];
+  var totalQ=0;
+  if(suc==='all'){totalQ=yr==='2025'?sumD25All(ml_rk):(yr==='2026'?sumD26All(ml_rk):sumD26All([0,1,2,3,4,5,6,7]));}
+  else{var sd=yr==='2025'?D25:D26;ml_rk.forEach(function(m){if(sd[suc]&&sd[suc][m])totalQ+=sd[suc][m];});}
+  var PRODS=ZOA_DATA.products,rows=[];
+  for(var pi in cur){
+    var prod=PRODS[parseInt(pi)];if(!prod)continue;
+    if(search&&prod.toLowerCase().indexOf(search)<0)continue;
+    var qty=cur[pi]||0;if(qty>0)rows.push({prod:prod,qty:qty,cmp:cmp[pi]||0});
+  }
+  rows.sort(function(a,b){return b.qty-a.qty;});if(topN>0)rows=rows.slice(0,topN);
+  var hasCmp=Object.keys(cmp).length>0;
+  var growing=rows.filter(function(r){return hasCmp&&r.cmp>0&&r.qty>r.cmp;}).length;
+  var declining=rows.filter(function(r){return hasCmp&&r.cmp>0&&r.qty<r.cmp;}).length;
+  var rkMet=document.getElementById('rkMetrics');
+  if(rkMet)rkMet.innerHTML='<div class="mc gold"><div class="mc-lbl">Piezas</div><div class="mc-val">'+fmt(totalQ)+'</div><div class="mc-sub"><span class="badge bg-gd">total</span></div></div><div class="mc neu"><div class="mc-lbl">Productos</div><div class="mc-val">'+rows.length+'</div><div class="mc-sub"><span class="badge bg-n">SKU</span></div></div><div class="mc up"><div class="mc-lbl">Creciendo</div><div class="mc-val">'+growing+'</div><div class="mc-sub"><span class="badge bg-up">↑</span></div></div><div class="mc dn"><div class="mc-lbl">Decreciendo</div><div class="mc-val">'+declining+'</div><div class="mc-sub"><span class="badge bg-dn">↓</span></div></div>';
+  var maxQ=rows.length?rows[0].qty:1,rc=['var(--gold)','#b0b8c8','#c0844a'],tb='';
+  rows.forEach(function(r,i){
+    var dif=hasCmp?r.qty-r.cmp:null;
+    var pct=dif!=null&&r.cmp>0?((dif/r.cmp)*100).toFixed(1):null;
+    var share=totalQ>0?(r.qty/totalQ*100).toFixed(1):0;
+    var bw=Math.round((r.qty/maxQ)*100);
+    var difStr=dif!=null&&r.cmp>0?(dif>=0?'<span style="color:var(--up);font-weight:600">+'+fmt(dif)+'</span>':'<span style="color:var(--dn);font-weight:600">'+fmt(dif)+'</span>'):'—';
+    var pctStr=pct!=null?'<span class="badge '+(isUp(pct)?'bg-up':'bg-dn')+'">'+(isUp(pct)?'↑':'↓')+' '+Math.abs(pct)+'%</span>':'—';
+    tb+='<tr><td style="font-weight:700;color:'+(rc[i]||'var(--tx3)')+';font-size:'+(i<3?14:12)+'px">'+(i+1)+'</td><td style="font-size:12px;font-weight:500">'+r.prod+'</td><td style="font-weight:600">'+fmt(r.qty)+'</td><td style="color:var(--tx2)">'+(r.cmp>0?fmt(r.cmp):'—')+'</td><td>'+difStr+'</td><td>'+pctStr+'</td><td><div style="display:flex;align-items:center;gap:5px"><div style="flex:1;background:var(--ink3);border-radius:2px;height:4px;overflow:hidden"><div style="width:'+bw+'%;height:100%;background:var(--gold);opacity:.7;border-radius:2px"></div></div><span style="font-size:10px;color:var(--tx3);min-width:32px">'+share+'%</span></div></td></tr>';
+  });
+  var tbEl=document.getElementById('tbRanking');
+  if(tbEl)tbEl.innerHTML=tb||'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--tx3)">Sin resultados</td></tr>';
+}
+
+// ── RENDER PRODGEN ────────────────────────────────────────────────────────────
+function renderProdGen(){
+  var yrEl=document.getElementById('pgYr');if(!yrEl)return;
+  var yr=yrEl.value,mesVal=document.getElementById('pgMes').value;
+  var suc=document.getElementById('pgSuc').value,topN=parseInt(document.getElementById('pgTop').value)||9999;
+  var search=(document.getElementById('pgSearch').value||'').toLowerCase();
+  var mi=mesVal==='all'?null:parseInt(mesVal);
+  var cur={},cmp={};
+  if(yr==='2025'){cur=qIdx(ZOA_DATA.idx25,'2025-01-01','2025-12-31',suc,mi);}
+  else if(yr==='2026'){cur=qIdx(ZOA_DATA.idx26,'2026-01-01','2026-08-31',suc,mi);cmp=qIdx(ZOA_DATA.idx25,'2025-01-01','2025-08-31',suc,mi);}
+  else{cur=qIdx(ZOA_DATA.idx26,'2026-01-01','2026-08-31',suc,mi);cmp=qIdx(ZOA_DATA.idx25,'2025-01-01','2025-08-31',suc,mi);}
+  var ml_pg=mi===null?[0,1,2,3,4,5,6,7,8,9,10,11]:[mi];
+  var totalQ=0;
+  if(suc==='all'){totalQ=yr==='2025'?sumD25All(ml_pg):(yr==='2026'?sumD26All(ml_pg):sumD26All([0,1,2,3,4,5,6,7]));}
+  else{var sd2=yr==='2025'?D25:D26;ml_pg.forEach(function(m){if(sd2[suc]&&sd2[suc][m])totalQ+=sd2[suc][m];});}
+  var col1=yr==='2025'?'2025':'2026',col2=yr==='2025'?'':'2025',showCmp=yr!=='2025';
+  var pgThead=document.querySelector('#pgTable thead tr');
+  if(pgThead)pgThead.innerHTML='<th style="width:36px">#</th><th>Producto</th><th>'+col1+'</th>'+(showCmp?'<th>'+col2+'</th><th>Dif. pzas</th><th>Var.%</th>':'')+'<th style="min-width:120px">Participación</th>';
+  var PRODS_LIST=ZOA_DATA.products,prodMap={};
+  for(var pi in cur){
+    var prod=PRODS_LIST[parseInt(pi)];if(!prod)continue;
+    var canon=normalizeProd(prod);
+    if(canon==='__EXCLUIR__')continue;
+    if(search&&canon.toLowerCase().indexOf(search)<0)continue;
+    if(!prodMap[canon])prodMap[canon]={prod:canon,qty:0,cmp:0};
+    prodMap[canon].qty+=(cur[pi]||0);
+    prodMap[canon].cmp+=(cmp[pi]||0);
+  }
+  var rows=Object.values(prodMap).filter(function(r){return r.qty>0;});
+  rows.sort(function(a,b){return b.qty-a.qty;});if(topN>0)rows=rows.slice(0,topN);
+  var hasCmp=Object.keys(cmp).length>0;
+  var growing=rows.filter(function(r){return hasCmp&&r.cmp>0&&r.qty>r.cmp;}).length;
+  var declining=rows.filter(function(r){return hasCmp&&r.cmp>0&&r.qty<r.cmp;}).length;
+  var pgMet=document.getElementById('pgMetrics');
+  if(pgMet)pgMet.innerHTML='<div class="mc gold"><div class="mc-lbl">Total piezas</div><div class="mc-val">'+fmt(totalQ)+'</div><div class="mc-sub"><span class="badge bg-gd">empresa</span></div></div><div class="mc neu"><div class="mc-lbl">Productos</div><div class="mc-val">'+rows.length+'</div><div class="mc-sub"><span class="badge bg-n">SKU</span></div></div><div class="mc up"><div class="mc-lbl">Creciendo</div><div class="mc-val">'+growing+'</div><div class="mc-sub"><span class="badge bg-up">↑</span></div></div><div class="mc dn"><div class="mc-lbl">Decreciendo</div><div class="mc-val">'+declining+'</div><div class="mc-sub"><span class="badge bg-dn">↓</span></div></div>';
+  var maxQ=rows.length?rows[0].qty:1,rc=['var(--gold)','#b0b8c8','#c0844a'],tb='';
+  rows.forEach(function(r,i){
+    var dif=showCmp?r.qty-r.cmp:null;
+    var pct=dif!=null&&r.cmp>0?((dif/r.cmp)*100).toFixed(1):null;
+    var share=totalQ>0?(r.qty/totalQ*100).toFixed(1):0;
+    var bw=Math.round((r.qty/maxQ)*100);
+    var pctStr=pct!=null?'<span class="badge '+(isUp(pct)?'bg-up':'bg-dn')+'">'+(isUp(pct)?'↑':'↓')+' '+Math.abs(pct)+'%</span>':'—';
+    var difStr=dif!=null&&r.cmp>0?(dif>=0?'<span style="color:var(--up);font-weight:600">+'+fmt(dif)+'</span>':'<span style="color:var(--dn);font-weight:600">'+fmt(dif)+'</span>'):'—';
+    tb+='<tr><td style="font-weight:700;color:'+(rc[i]||'var(--tx3)')+';font-size:'+(i<3?14:12)+'px">'+(i+1)+'</td><td style="font-size:12px;font-weight:500">'+r.prod+'</td><td style="font-weight:600">'+fmt(r.qty)+'</td>'+(showCmp?'<td style="color:var(--tx2)">'+(r.cmp>0?fmt(r.cmp):'—')+'</td><td>'+difStr+'</td><td>'+pctStr+'</td>':'')+'<td><div style="display:flex;align-items:center;gap:5px"><div style="flex:1;background:var(--ink3);border-radius:2px;height:4px;overflow:hidden"><div style="width:'+bw+'%;height:100%;background:var(--gold);opacity:.7;border-radius:2px"></div></div><span style="font-size:10px;color:var(--tx3);min-width:32px">'+share+'%</span></div></td></tr>';
+  });
+  var tbEl=document.getElementById('tbProdGen');
+  if(tbEl)tbEl.innerHTML=tb||'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--tx3)">Sin resultados</td></tr>';
+}
+
+// ── RENDER IDEAL +20% ─────────────────────────────────────────────────────────
+function renderIdeal(){
+  var sucEl=document.getElementById('idSuc'),mesEl=document.getElementById('idMes');
+  if(!sucEl||!mesEl)return;
+  var suc=sucEl.value,mesF=mesEl.value,mi=mesF==='all'?null:parseInt(mesF);
+  var SUCS_I=['Líneas','M A','Club','DM','Zapotlanejo','ELITE'];
+  var MESES_I=['Enero','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var SN_I={'Líneas':'Líneas','M A':'Miguel Alemán','Club':'Club','DM':'Denim Click','Zapotlanejo':'Zapotlanejo','ELITE':'Elite'};
+  var MCOL={'Líneas':'#c9a86c','M A':'#7a9fd4','Club':'#6dbf8a','DM':'#e0875a','Zapotlanejo':'#b07ec8','ELITE':'#5abcd4'};
+  var sucList=suc==='all'?SUCS_I:[suc];
+  var monList=mi===null?[0,1,2,3,4,5,6,7,8,9,10,11]:[mi];
+  var tot25=0,totMeta=0,tot26=0;
+  sucList.forEach(function(s){monList.forEach(function(m){
+    var v25=(D25[s]&&D25[s][m])||0;
+    var v26=(D26[s]&&D26[s][m]!=null)?D26[s][m]:null;
+    tot25+=v25;totMeta+=Math.round(v25*1.2);if(v26!==null)tot26+=v26;
+  });});
+  var faltante=totMeta-tot26,avance=totMeta>0?Math.min(100,tot26/totMeta*100):0;
+  var faltEl=document.getElementById('idealKpis');
+  if(faltEl){
+    var barW=avance.toFixed(0);
+    faltEl.innerHTML='<div class="mc gold"><div class="mc-lbl">Venta 2025</div><div class="mc-val">'+fmt(tot25)+'</div><div class="mc-sub" style="font-size:11px;color:var(--tx3)">piezas base</div></div>'+'<div class="mc neu" style="border-top-color:var(--neu)"><div class="mc-lbl">Meta +20%</div><div class="mc-val" style="color:var(--neu)">'+fmt(totMeta)+'</div><div class="mc-sub" style="font-size:11px;color:var(--tx3)">objetivo</div></div>'+'<div class="mc '+(tot26>=totMeta?'up':'dn')+'"><div class="mc-lbl">2026 actual</div><div class="mc-val">'+fmt(tot26)+'</div><div class="mc-sub" style="font-size:11px;color:var(--tx3)">vendidas</div></div>'+'<div class="mc" style="border-top-color:'+(faltante>0?'var(--dn)':'var(--up)')+'"><div class="mc-lbl">'+(faltante>0?'Faltante':'Superávit')+'</div><div class="mc-val" style="color:'+(faltante>0?'var(--dn)':'var(--up)')+'">'+fmt(Math.abs(faltante))+'</div><div style="background:var(--ink3);border-radius:999px;height:5px;overflow:hidden;margin:8px 0"><div style="width:'+barW+'%;max-width:100%;height:100%;background:'+(avance>=100?'var(--up)':'var(--gold)')+';border-radius:999px"></div></div><div style="font-size:11px;color:var(--tx3)">'+avance.toFixed(1)+'% del objetivo</div></div>';
+  }
+  var tb='',lastMes=-1;
+  sucList.forEach(function(s){monList.forEach(function(m){
+    var v25=(D25[s]&&D25[s][m])||0,meta=Math.round(v25*1.2);
+    var v26=(D26[s]&&D26[s][m]!=null)?D26[s][m]:null;
+    if(v25===0&&v26===null)return;
+    var falt=v26!==null?meta-v26:null;
+    var pct=v26!==null&&meta>0?Math.min(100,v26/meta*100):null;
+    var isNew=m!==lastMes;lastMes=m;
+    var faltStr=falt!==null?(falt>0?'<span style="color:var(--dn)">-'+fmt(falt)+'</span>':'<span style="color:var(--up)">✓ +'+fmt(Math.abs(falt))+'</span>'):'<span style="color:var(--tx3)">—</span>';
+    var avStr=pct!==null?'<span style="font-size:11px;font-weight:600;color:'+(pct>=100?'var(--up)':pct>=80?'var(--gold)':'var(--dn)')+'">'+pct.toFixed(1)+'%</span>':'<span style="color:var(--tx3)">—</span>';
+    var bw=pct!==null?Math.min(100,pct).toFixed(0):0;
+    var prog='<div style="flex:1;background:var(--ink3);border-radius:999px;height:5px;overflow:hidden;min-width:60px"><div style="width:'+bw+'%;height:100%;background:'+(pct>=100?'var(--up)':pct>=80?'var(--gold)':'var(--dn)')+';border-radius:999px"></div></div>';
+    tb+='<tr><td style="font-weight:600;color:var(--gold);font-size:12px">'+(isNew?MESES_I[m]:'')+'</td><td><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+(MCOL[s]||'#888')+';margin-right:6px;vertical-align:middle"></span>'+(SN_I[s]||s)+'</td><td>'+fmt(v25)+'</td><td style="color:var(--neu);font-weight:600">'+fmt(meta)+'</td><td style="color:'+(v26!==null?(v26>=meta?'var(--up)':'var(--dn)'):'var(--tx3)')+'">'+( v26!==null?fmt(v26):'—')+'</td><td>'+faltStr+'</td><td>'+avStr+'</td><td>'+prog+'</td></tr>';
+  });});
+  var tbEl=document.getElementById('tbIdeal');
+  if(tbEl)tbEl.innerHTML=tb||'<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--tx3)">Sin datos</td></tr>';
+}
+
+// ── RESET DATA ────────────────────────────────────────────────────────────────
+function resetData(){if(confirm('¿Restablecer todos los datos al estado original?')){location.reload();}}
+
+
 function switchView(name,el){
   curView=name;
   // Hide all views first
