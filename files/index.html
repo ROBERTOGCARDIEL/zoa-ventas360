@@ -846,15 +846,47 @@ function renderDetalle(){
   if(gS()==='all') sucs=allSucs;
   var html='';
   ml.forEach(function(m){
+    // Calculate month totals across ALL stores
+    var tot25=0,tot26=0,has26=false;
+    sucs.forEach(function(s){
+      tot25+=(D25[s]&&D25[s][m])||0;
+      if(D26[s]&&D26[s][m]!=null){tot26+=D26[s][m];has26=true;}
+    });
+    var totDiff=has26?tot26-tot25:null;
+    var totPct=totDiff!=null&&tot25>0?((totDiff/tot25)*100).toFixed(1):null;
+
+    // Month cell with totals summary
+    var mesHTML='<div style="font-weight:700;color:var(--gold);font-size:13px;margin-bottom:8px">'+MES[m]+'</div>'+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.7">'+
+        '<div>2025: <span style="color:var(--tx1);font-weight:600">'+fmt(tot25)+'</span></div>'+
+        (has26?
+          '<div>2026: <span style="color:var(--tx1);font-weight:600">'+fmt(tot26)+'</span></div>'+
+          '<div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.07)">'+
+            '<span style="color:'+(totDiff>=0?'var(--up)':'var(--dn)')+';font-weight:700">'+
+              (totDiff>=0?'+':'')+fmt(totDiff)+' pz'+
+            '</span><br>'+
+            '<span class="badge '+(totPct&&parseFloat(totPct)>=0?'bg-up':'bg-dn')+'" style="margin-top:3px">'+
+              (totPct?(parseFloat(totPct)>=0?'↑':'↓')+' '+Math.abs(totPct)+'%':'—')+
+            '</span>'+
+          '</div>'
+        :'<div style="color:var(--tx3)">2026: —</div>')+
+      '</div>';
+
     sucs.forEach(function(s,si){
       var v25=D25[s]?D25[s][m]:0;
       var v26=D26[s]?D26[s][m]:null;
       var diff=v26!=null?v26-v25:null;
       var pct=diff!=null&&v25>0?((diff/v25)*100).toFixed(1):null;
-      var mesCell=si===0?'<td rowspan="'+sucs.length+'" style="font-weight:600;color:var(--gold);vertical-align:top;padding-top:10px">'+MES[m]+'</td>':'';
+      var mesCell=si===0?'<td rowspan="'+sucs.length+'" style="vertical-align:top;padding-top:10px;min-width:140px">'+mesHTML+'</td>':'';
       var diffCell=diff!=null?(diff>=0?'+':'')+fmt(diff):'—';
       var pctCell=pct!=null?'<span class="badge '+(isUp(pct)?'bg-up':'bg-dn')+'">'+(isUp(pct)?'↑':'↓')+' '+Math.abs(pct)+'%</span>':'<span class="td-na">—</span>';
-      html+='<tr>'+mesCell+'<td><span class="sdot" style="background:'+(SCOL[s]||'#888')+'"></span>'+(SN[s]||s)+'</td>'+'<td>'+(v25?fmt(v25):'—')+'</td>'+'<td>'+(v26!=null?fmt(v26):'<span class="td-na">—</span>')+'</td>'+'<td class="'+(diff!=null?(isUp(diff)?'td-up':'td-dn'):'td-na')+'">'+diffCell+'</td>'+'<td>'+pctCell+'</td></tr>';
+      html+='<tr>'+mesCell+
+        '<td><span class="sdot" style="background:'+(SCOL[s]||'#888')+'"></span>'+(SN[s]||s)+'</td>'+
+        '<td>'+(v25?fmt(v25):'—')+'</td>'+
+        '<td>'+(v26!=null?fmt(v26):'<span class="td-na">—</span>')+'</td>'+
+        '<td class="'+(diff!=null?(isUp(diff)?'td-up':'td-dn'):'td-na')+'">'+diffCell+'</td>'+
+        '<td>'+pctCell+'</td>'+
+      '</tr>';
     });
   });
   var tb=document.getElementById('tbDet')||document.getElementById('tbDetalle');
