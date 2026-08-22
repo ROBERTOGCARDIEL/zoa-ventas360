@@ -1080,6 +1080,193 @@ function renderIdeal(){
 function resetData(){if(confirm('¿Restablecer todos los datos al estado original?')){location.reload();}}
 
 
+
+function normStore(n){
+  var u=n.toLowerCase();
+  if(u.includes('izazaga 2')||u.includes('izazaga2')) return 'Izazaga2';
+  if(u.includes('izazaga')) return 'Izazaga';
+  if(u.includes('zapotlanejo 2')) return 'Zapotlanejo2';
+  if(u.includes('zapotlanejo')) return 'Zapotlanejo';
+  if(u.includes('ma2')||u.includes('miguel 2')) return 'M A';
+  if(u.includes('m a')||u.includes('miguel')) return 'M A';
+  if(u.includes('linea')||u.includes('ínea')) return 'Líneas';
+  if(u.includes('club')) return 'Club';
+  if(u.includes('dm')||u.includes('denim')) return 'DM';
+  if(u.includes('elite')){if(u.includes('producci')) return null; return 'ELITE';}
+  if(u.includes('stock')) return 'Tienda Stock';
+  return null;
+}
+
+function excluirProd(p){
+  var u=p.toUpperCase();
+  return ['PAQUETERIA','PAQUETERÍA','ENVIO','ENVÍO','FLETE','AJUSTE','BONIFICACION','DESCUENTO'].some(function(x){return u.includes(x);});
+}
+
+function processFile(file,year){
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=new Uint8Array(e.target.result);
+      var wb=XLSX.read(data,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      // Detect indent levels
+      var indents=new Set();
+      for(var ri=0;ri<Math.min(400,rows.length);ri++){
+        var c=String(rows[ri][0]||'');
+        if(c.trim()) indents.add(c.length-c.trimStart().length);
+      }
+      var inds=Array.from(indents).sort(function(a,b){return a-b;});
+      var LVL_DAY,LVL_STORE,LVL_PROD;
+      if(inds.includes(30)){
+        LVL_DAY=20;LVL_STORE=25;LVL_PROD=30;
+      } else if(inds.includes(25)&&inds.includes(20)&&inds.includes(15)){
+        LVL_DAY=15;LVL_STORE=20;LVL_PROD=25;
+      } else if(inds.includes(20)&&inds.includes(15)&&!inds.includes(25)){
+        LVL_DAY=10;LVL_STORE=15;LVL_PROD=20;
+      } else {
+        LVL_DAY=20;LVL_STORE=25;LVL_PROD=30;
+      }
+      console.log('Format: LVL='+LVL_DAY+'/'+LVL_STORE+'/'+LVL_PROD+' inds='+JSON.stringify(inds));
+
+      var byStoreDay={};
+      var byStoreDayProd={};
+      var monthsInFile=new Set();
+      var storesInFile=new Set();
+      var curDay=null,curStore=null;
+      var MES_MAP={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
+
+      for(var ri=0;ri<rows.length;ri++){
+        var cell=String(rows[ri][0]||'');
+        if(!cell.trim()) continue;
+        var indent=cell.length-cell.trimStart().length;
+        var s=cell.trim();
+        var qty=parseFloat(rows[ri][1])||0;
+
+        if(indent===LVL_DAY){
+          var dm=s.match(/^(\d{1,2})\s+(\w+)\.?\s+(\d{4})/);
+          if(dm){
+            var mon=MES_MAP[dm[2].substring(0,3).toLowerCase()];
+            if(mon!==undefined){
+              curDay=dm[3]+'-'+String(mon+1).padStart(2,'0')+'-'+String(dm[1]).padStart(2,'0');
+              curStore=null;
+              monthsInFile.add(mon);
+            }
+          }
+        } else if(indent===LVL_STORE){
+          curStore=normStore(s);
+          if(curStore) storesInFile.add(curStore);
+        } else if(indent===LVL_PROD){
+          if(!curStore||!curDay||qty<=0||excluirProd(s)) continue;
+          var canon=normalizeProd(s);
+          if(!canon||canon==='__EXCLUIR__') continue;
+          var rawClean=s.replace(/^\[[^\]]+\]\s*/,'').trim();
+          if(!byStoreDay[curStore]) byStoreDay[curStore]={};
+          byStoreDay[curStore][curDay]=(byStoreDay[curStore][curDay]||0)+qty;
+          if(!byStoreDayProd[curStore]) byStoreDayProd[curStore]={};
+          if(!byStoreDayProd[curStore][curDay]) byStoreDayProd[curStore][curDay]={};
+          // Accumulate canonical (for ProdGen) and raw (for Ranking) separately
+          var key_can='CAN:'+canon;
+          var key_raw='RAW:'+rawClean;
+          byStoreDayProd[curStore][curDay][key_can]=(byStoreDayProd[curStore][curDay][key_can]||0)+qty;
+          byStoreDayProd[curStore][curDay][key_raw]=(byStoreDayProd[curStore][curDay][key_raw]||0)+qty;
+        }
+      }
+
+      var storeArr=Array.from(storesInFile);
+      var monthArr=Array.from(monthsInFile);
+      console.log('Stores: '+JSON.stringify(storeArr)+' Months: '+JSON.stringify(monthArr));
+
+      // Update D25/D26
+      var targetD=year==='2025'?D25:D26;
+      storeArr.forEach(function(store){
+        if(!targetD[store]) return;
+        monthArr.forEach(function(mi){
+          var monStr=String(mi+1).padStart(2,'0');
+          var total=0;
+          Object.keys(byStoreDay[store]||{}).forEach(function(ds){
+            if(ds.split('-')[1]===monStr) total+=byStoreDay[store][ds];
+          });
+          if(total>0) targetD[store][mi]=total;
+        });
+      });
+
+      // Update DAILY
+      if(!DAILY[year]) DAILY[year]={};
+      storeArr.forEach(function(store){
+        if(!DAILY[year][store]) DAILY[year][store]={};
+        Object.entries(byStoreDay[store]||{}).forEach(function(e){
+          var ds=e[0],q=e[1];
+          var mi=String(parseInt(ds.split('-')[1])-1);
+          if(!DAILY[year][store][mi]) DAILY[year][store][mi]={};
+          DAILY[year][store][mi][ds]=q;
+        });
+      });
+
+      // Update ZOA_DATA (canonical - for Productos General)
+      var targetIdx=year==='2025'?ZOA_DATA.idx25:ZOA_DATA.idx26;
+      var canProds=ZOA_DATA.products;
+      var canStores=ZOA_DATA.stores;
+      storeArr.forEach(function(store){
+        var si=String(canStores.indexOf(store));
+        if(si==='-1') return;
+        Object.entries(byStoreDayProd[store]||{}).forEach(function(de){
+          var ds=de[0];
+          if(!targetIdx[ds]) targetIdx[ds]={};
+          if(!targetIdx[ds][si]) targetIdx[ds][si]={};
+          Object.entries(de[1]).forEach(function(pe){
+            var key=pe[0],q=pe[1];
+            if(!key.startsWith('CAN:')||q<=0) return;
+            var canon=key.substring(4);
+            var pi=canProds.indexOf(canon);
+            if(pi===-1){pi=canProds.length;canProds.push(canon);}
+            targetIdx[ds][si][String(pi)]=(targetIdx[ds][si][String(pi)]||0)+q;
+          });
+        });
+      });
+
+      // Update ZOA_RAW (raw names - for Ranking)
+      var targetRawIdx=year==='2025'?ZOA_RAW.idx25:ZOA_RAW.idx26;
+      var rawProds=ZOA_RAW.products;
+      var rawStores=ZOA_RAW.stores;
+      storeArr.forEach(function(store){
+        var si=String(rawStores.indexOf(store));
+        if(si==='-1') return;
+        Object.entries(byStoreDayProd[store]||{}).forEach(function(de){
+          var ds=de[0];
+          if(!targetRawIdx[ds]) targetRawIdx[ds]={};
+          if(!targetRawIdx[ds][si]) targetRawIdx[ds][si]={};
+          Object.entries(de[1]).forEach(function(pe){
+            var key=pe[0],q=pe[1];
+            if(!key.startsWith('RAW:')||q<=0) return;
+            var rawName=key.substring(4);
+            var pi=rawProds.indexOf(rawName);
+            if(pi===-1){pi=rawProds.length;rawProds.push(rawName);}
+            targetRawIdx[ds][si][String(pi)]=(targetRawIdx[ds][si][String(pi)]||0)+q;
+          });
+        });
+      });
+
+      var total=Object.values(byStoreDay).reduce(function(a,sd){return a+Object.values(sd).reduce(function(b,v){return b+v;},0);},0);
+      console.log('\u2713 Cargado: '+total.toLocaleString('es-MX')+' pzas | año='+year);
+      alert('\u2713 Archivo cargado: '+total.toLocaleString('es-MX')+' piezas ('+year+')');
+
+      renderAll();
+      if(curView==='ranking') setTimeout(renderRanking,80);
+      if(curView==='prodgen') setTimeout(renderProdGen,80);
+      if(curView==='diario') setTimeout(renderDiario,80);
+      if(curView==='ideal') setTimeout(renderIdeal,80);
+
+    }catch(err){
+      console.error('processFile error:',err);
+      alert('Error al leer el archivo: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function switchView(name,el){
   curView=name;
   // Hide all views first
