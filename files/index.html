@@ -159,6 +159,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.015)}
 @media(max-width:700px){#pvMetrics{grid-template-columns:1fr 1fr!important}}
 input[type=file]{display:none}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -282,6 +283,11 @@ input[type=file]{display:none}
     <input type="file" id="f26" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg" onchange="processFile(this.files[0],'2026')">
     <div id="files26"></div>
     <button style="width:100%;padding:6px;border-radius:var(--r);background:transparent;border:1px solid var(--b2);color:var(--tx3);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif;margin-top:5px" onclick="resetData()">↺ Restablecer</button>
+  <div id="sbConfig" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">
+    <div style="font-size:10px;color:var(--neu);font-weight:600;margin-bottom:5px">☁ NUBE</div>
+    <button onclick="saveToSupabase().then(function(ok){if(ok)alert('Datos guardados en la nube ✓');else alert('Error al guardar en nube');})" style="width:100%;padding:6px;font-size:11px;background:var(--gold);color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:600">☁ Guardar en nube</button>
+    <div style="font-size:10px;color:var(--tx3);margin-top:4px;text-align:center">Todos verán los datos al recargar</div>
+  </div>
   </div>
   <div class="lk-msg" id="sbPub">Datos actualizados por<br><b>Gerencia de Ventas ZOA.</b></div>
   <div class="sb-ft">ZOA · Inteligencia Comercial<br>Temporada 2025 — 2026</div>
@@ -632,6 +638,87 @@ const DAILY={"2025":{"Líneas":{"0":{"2025-01-02":252,"2025-01-03":181,"2025-01-
 
 // ── COLORES TIENDAS ──────────────────────────────────────────────────────────
 const SCOL={'Líneas':'#c9a86c','M A':'#7a9fd4','Club':'#6dbf8a','DM':'#e0875a','Zapotlanejo':'#b07ec8','ELITE':'#5abcd4','Tienda Stock':'#666680','Izazaga':'#887060','Izazaga2':'#706050','Zapotlanejo2':'#607060'};
+
+// ── SUPABASE CONFIG ────────────────────────────────────────────────────────────
+const SB_URL = 'https://kpmazbhoomixdadehrvt.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbWF6Ymhvb21peGRhZGVocnZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjU5NTYsImV4cCI6MjEwMzM0MTk1Nn0.Q-9a_XfOOihVrB8my0ralHnj73LPkF_gxB-vpHFwg-s';
+const SB_SVC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbWF6Ymhvb21peGRhZGVocnZ0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Nzc2NTk1NiwiZXhwIjoyMTAzMzQxOTU2fQ.o_p_CMv4D8buDPQGb2shxvLhfAfsafW-jhREp_NTEVc';
+var sbClient = null;
+try{ sbClient = supabase.createClient(SB_URL, SB_ANON); }catch(e){ console.warn('Supabase init error:', e); }
+var sbWriteClient = null;
+try{ sbWriteClient = supabase.createClient(SB_URL, SB_SVC_KEY); }catch(e){ console.warn('Supabase write client error:', e); }
+
+// ── LOAD DATA FROM SUPABASE ────────────────────────────────────────────────────
+async function loadFromSupabase(){
+  if(!sbClient) return false;
+  try{
+    const resp = await fetch(SB_URL+'/rest/v1/zoa_data?select=key,value,updated_at', {
+      headers: {'apikey': SB_ANON, 'Authorization': 'Bearer '+SB_ANON}
+    });
+    if(!resp.ok) return false;
+    const data = await resp.json();
+    if(!data || !data.length) return false;
+    const error = null;
+    
+    let updated = false;
+    data.forEach(function(row){
+      try{
+        if(row.key==='d25' && row.value){ Object.assign(D25, row.value); updated=true; }
+        else if(row.key==='d26' && row.value){ Object.assign(D26, row.value); updated=true; }
+        else if(row.key==='daily' && row.value){ Object.assign(DAILY, row.value); updated=true; }
+        else if(row.key==='zoa_data' && row.value){
+          ZOA_DATA.products=row.value.products||ZOA_DATA.products;
+          ZOA_DATA.stores=row.value.stores||ZOA_DATA.stores;
+          Object.assign(ZOA_DATA.idx25, row.value.idx25||{});
+          Object.assign(ZOA_DATA.idx26, row.value.idx26||{});
+          updated=true;
+        }
+        else if(row.key==='zoa_raw' && row.value){
+          ZOA_RAW.products=row.value.products||ZOA_RAW.products;
+          ZOA_RAW.stores=row.value.stores||ZOA_RAW.stores;
+          Object.assign(ZOA_RAW.idx25, row.value.idx25||{});
+          Object.assign(ZOA_RAW.idx26, row.value.idx26||{});
+          updated=true;
+        }
+        else if(row.key==='updated_at'){
+          const banner=document.getElementById('pubBanner');
+          if(banner){
+            const d=new Date(row.value);
+            banner.querySelector && (banner.innerText = 'Datos actualizados ' + d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}));
+          }
+        }
+      }catch(e){ console.warn('Row parse error:', row.key, e); }
+    });
+    if(updated){ renderAll(); console.log('✓ Datos cargados desde Supabase'); }
+    return updated;
+  }catch(e){ console.warn('loadFromSupabase error:', e); return false; }
+}
+
+// ── SAVE DATA TO SUPABASE ──────────────────────────────────────────────────────
+async function saveToSupabase(){
+  if(!sbWriteClient){ console.warn('No write client'); return false; }
+  let writeClient = sbWriteClient;
+  
+  const rows = [
+    {key:'d25', value: D25, updated_at: new Date().toISOString()},
+    {key:'d26', value: D26, updated_at: new Date().toISOString()},
+    {key:'daily', value: DAILY, updated_at: new Date().toISOString()},
+    {key:'zoa_data', value: {products:ZOA_DATA.products, stores:ZOA_DATA.stores, idx25:ZOA_DATA.idx25, idx26:ZOA_DATA.idx26}, updated_at: new Date().toISOString()},
+    {key:'zoa_raw', value: {products:ZOA_RAW.products, stores:ZOA_RAW.stores, idx25:ZOA_RAW.idx25, idx26:ZOA_RAW.idx26}, updated_at: new Date().toISOString()},
+    {key:'updated_at', value: new Date().toISOString(), updated_at: new Date().toISOString()},
+  ];
+  
+  let allOk = true;
+  for(const row of rows){
+    const {error} = await writeClient.from('zoa_data').upsert(row, {onConflict:'key'});
+    if(error){ console.error('Save error for', row.key, error); allOk=false; }
+  }
+  if(allOk) console.log('✓ Datos guardados en Supabase');
+  return allOk;
+}
+
+// Load on startup (after a short delay to let the page render)
+setTimeout(function(){ loadFromSupabase(); }, 800);
 const SUCS=['Líneas','M A','Club','DM','Zapotlanejo','ELITE'];
 const SUCS_ALL_2025=['Líneas','M A','Club','DM','Zapotlanejo','ELITE','Tienda Stock','Izazaga','Izazaga2','Zapotlanejo2'];
 const SUCS_ALL_2026=['Líneas','M A','Club','DM','Zapotlanejo','ELITE','Tienda Stock','Zapotlanejo2'];
@@ -686,6 +773,16 @@ function doLogin(){
     document.getElementById('sbUp').style.display='block';
     document.getElementById('sbPub').style.display='none';
     document.getElementById('admEntryBtn').style.display='none';
+    var sbCfg=document.getElementById('sbConfig');
+    if(sbCfg){
+      sbCfg.style.display='block';
+      var u=localStorage.getItem('zoa_sb_url')||'';
+      var a=localStorage.getItem('zoa_sb_anon')||'';
+      var s=localStorage.getItem('zoa_sb_svc')||'';
+      if(u) document.getElementById('sbUrlIn').value=u;
+      if(a) document.getElementById('sbAnonIn').value=a;
+      if(s) document.getElementById('sbSvcIn').value=s;
+    }
     document.getElementById('admPill').style.display='flex';
     document.getElementById('aiBtn').style.display='flex';
     document.getElementById('pubBanner').classList.remove('show');
@@ -1078,6 +1175,16 @@ function renderIdeal(){
 
 // ── RESET DATA ────────────────────────────────────────────────────────────────
 function resetData(){if(confirm('¿Restablecer todos los datos al estado original?')){location.reload();}}
+
+function saveSbConfig(){
+  var url=document.getElementById('sbUrlIn').value.trim();
+  var anon=document.getElementById('sbAnonIn').value.trim();
+  var svc=document.getElementById('sbSvcIn').value.trim();
+  if(url) localStorage.setItem('zoa_sb_url',url);
+  if(anon) localStorage.setItem('zoa_sb_anon',anon);
+  if(svc) localStorage.setItem('zoa_sb_svc',svc);
+  alert('Configuración guardada. Recarga la página para conectar.');
+}
 
 
 
