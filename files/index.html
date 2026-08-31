@@ -7,6 +7,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+CTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ZOA · Inteligencia Comercial</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -302,6 +311,34 @@ input[type=file]{display:none}
 
   <!-- DASHBOARD -->
   <div id="vd">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <select id="dbMes" class="sel" onchange="renderAll()" style="flex:1;min-width:140px">
+        <option value="all">Todos los meses</option>
+        <option value="0">Enero</option><option value="1">Febrero</option>
+        <option value="2">Marzo</option><option value="3">Abril</option>
+        <option value="4">Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option>
+        <option value="8">Septiembre</option><option value="9">Octubre</option>
+        <option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+      <select id="dbSuc" class="sel" onchange="renderAll()" style="flex:1;min-width:160px">
+        <option value="all">Todas las sucursales</option>
+        <optgroup label="Activas 2026">
+          <option value="Líneas">Líneas Originales</option>
+          <option value="M A">Miguel Alemán</option>
+          <option value="Club">Club Jeans</option>
+          <option value="DM">Denim Click</option>
+          <option value="Zapotlanejo">Outlet Zapotlanejo</option>
+          <option value="ELITE">Elite</option>
+        </optgroup>
+        <optgroup label="Históricas">
+          <option value="Tienda Stock">Tienda Stock</option>
+          <option value="Izazaga">Izazaga</option>
+          <option value="Izazaga2">Izazaga 2</option>
+          <option value="Zapotlanejo2">Zapotlanejo 2</option>
+        </optgroup>
+      </select>
+    </div>
     <div class="metrics" id="metricsRow"></div>
     <div class="card">
       <div class="card-h">
@@ -348,7 +385,7 @@ input[type=file]{display:none}
   </div>
 
   <!-- DIARIO -->
-  <div id="vdia" style="display:none">
+  <div id="vdia" style="display:none!important" style="display:none">
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="card-t">Comparativo diario</div>
@@ -418,6 +455,161 @@ input[type=file]{display:none}
         </select>
       </div>
       <input id="rkSearch" class="inp" placeholder="🔍 Buscar producto…" oninput="renderRanking()" style="width:100%">
+    </div>
+    <div class="metrics" id="rkMetrics"></div>
+    <div class="card" style="padding:0">
+      <div class="tw">
+        <table id="rkTable">
+          <thead><tr>
+            <th style="width:36px">#</th><th>Producto</th><th>Pzas</th>
+            <th>Comp.</th><th>Var.%</th><th style="min-width:100px">Part.</th>
+          </tr></thead>
+          <tbody id="tbRanking"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <!-- PROVEEDORES -->
+  <div id="vprov" style="display:none">
+
+    <!-- Filtros compactos -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <select id="pvYr" class="sel" onchange="renderProv()" style="flex:1;min-width:140px">
+        <option value="2026">2026 (ene–jun)</option>
+        <option value="2025">2025 (anual)</option>
+        <option value="all">2025 + 2026</option>
+      </select>
+      <select id="pvMes" class="sel" onchange="renderProv()" style="flex:1;min-width:120px">
+        <option value="all">Todos los meses</option>
+        <option value="0">Enero</option><option value="1">Febrero</option>
+        <option value="2">Marzo</option><option value="3">Abril</option>
+        <option value="4">Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option>
+        <option value="8">Septiembre</option><option value="9">Octubre</option>
+        <option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+      <select id="pvSuc" class="sel" onchange="renderProv()" style="flex:1;min-width:140px">
+        <option value="all">Todas las sucursales</option>
+        <option value="Líneas">Líneas Originales</option>
+        <option value="M A">Miguel Alemán</option>
+        <option value="Club">Club Jeans</option>
+        <option value="DM">Denim Click</option>
+        <option value="Zapotlanejo">Outlet Zapotlanejo</option>
+        <option value="ELITE">Elite</option>
+      </select>
+    </div>
+
+    <!-- KPI cards con dona integrada -->
+    <div id="pvMetrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px"></div>
+
+    <!-- Tabs -->
+    <div class="tab-row" id="pvTabRow" style="margin-bottom:12px">
+      <div class="tab active" id="pvt-gen" onclick="setPvTab('general',this)">🏆 General</div>
+      <div class="tab" id="pvt-gom" onclick="setPvTab('Gomex',this)" style="color:#c9a86c">Gomex</div>
+      <div class="tab" id="pvt-pam" onclick="setPvTab('Pamex',this)" style="color:#7a9fd4">Pamex</div>
+      <div class="tab" id="pvt-pro" onclick="setPvTab('Promex',this)" style="color:#6dbf8a">Promex</div>
+    </div>
+
+    <!-- Tabla ranking -->
+    <div class="card" style="padding:0">
+      <div class="tw">
+        <table id="pvTable">
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Producto</th>
+            <th style="width:75px">Prov.</th>
+            <th style="width:80px">Pzas</th>
+            <th style="width:110px">% del prov.</th>
+            <th style="width:100px">% del total</th>
+          </tr></thead>
+          <tbody id="tbProv"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- IDEAL +20% -->
+  <div id="videal" style="display:none">
+
+    <!-- KPI Dashboard row -->
+    <div id="idealKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+
+    <!-- Filtros -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <select id="idSuc" class="sel" onchange="renderIdeal()" style="flex:1;min-width:150px">
+        <option value="all">Todas las sucursales</option>
+        <option value="Líneas">Líneas Originales</option>
+        <option value="M A">Miguel Alemán</option>
+        <option value="Club">Club Jeans</option>
+        <option value="DM">Denim Click</option>
+        <option value="Zapotlanejo">Outlet Zapotlanejo</option>
+        <option value="ELITE">Elite</option>
+      </select>
+      <select id="idMes" class="sel" onchange="renderIdeal()" style="flex:1;min-width:140px">
+        <option value="all">Todos los meses</option>
+        <option value="0">Enero</option><option value="1">Febrero</option>
+        <option value="2">Marzo</option><option value="3">Abril</option>
+        <option value="4">Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option>
+        <option value="8">Septiembre</option><option value="9">Octubre</option>
+        <option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+    </div>
+
+    <!-- Tabla por mes × sucursal -->
+    <div class="card" style="padding:0;margin-bottom:12px">
+      <div class="tw">
+        <table id="idealTable">
+          <thead><tr>
+            <th>Mes</th>
+            <th>Sucursal</th>
+            <th>2025 real</th>
+            <th>Meta +20%</th>
+            <th>2026 real</th>
+            <th>Faltante</th>
+            <th>Avance</th>
+            <th style="min-width:120px">Progreso</th>
+          </tr></thead>
+          <tbody id="tbIdeal"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- PRODUCTOS GENERAL -->
+  <div<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;flex:2;min-width:260px;background:var(--ink3);border:1px solid var(--b1);border-radius:var(--r);padding:6px 10px">
+        <span style="font-size:11px;color:var(--tx3);white-space:nowrap">Del</span>
+        <input type="date" id="rkFrom" style="background:transparent;border:none;color:var(--tx1);font-size:12px;flex:1;outline:none" onchange="renderRanking()">
+        <span style="font-size:11px;color:var(--tx3);white-space:nowrap">al</span>
+        <input type="date" id="rkTo" style="background:transparent;border:none;color:var(--tx1);font-size:12px;flex:1;outline:none" onchange="renderRanking()">
+      </div>
+      <select id="rkSuc" class="sel" onchange="renderRanking()" style="flex:1;min-width:160px">
+        <option value="all">Todas las sucursales</option>
+        <optgroup label="Activas 2026">
+          <option value="Líneas">Líneas Originales</option>
+          <option value="M A">Miguel Alemán</option>
+          <option value="Club">Club Jeans</option>
+          <option value="DM">Denim Click</option>
+          <option value="Zapotlanejo">Outlet Zapotlanejo</option>
+          <option value="ELITE">Elite</option>
+        </optgroup>
+        <optgroup label="Históricas">
+          <option value="Tienda Stock">Tienda Stock</option>
+          <option value="Izazaga">Izazaga</option>
+          <option value="Izazaga2">Izazaga 2</option>
+          <option value="Zapotlanejo2">Zapotlanejo 2</option>
+        </optgroup>
+      </select>
+      <input id="rkSearch" type="text" placeholder="🔍 Buscar producto..." class="sel" style="flex:1;min-width:160px" oninput="renderRanking()">
     </div>
     <div class="metrics" id="rkMetrics"></div>
     <div class="card" style="padding:0">
@@ -741,8 +933,14 @@ const D26={'Líneas':[6584,6665,7768,7057,6995,7960,8018,1631,null,null,null,nul
 let chartInst=null,chartDiarioInst=null,aiOpen=false,isAdmin=false,curView='dashboard',sbOpen=false;
 
 const fmt=n=>n==null?'—':Number(n).toLocaleString('es-MX');
-const gM=()=>document.getElementById('mesSelect').value;
-const gS=()=>document.getElementById('sucSelect').value;
+const gM=()=>{
+  if(curView==='dashboard'){var el=document.getElementById('dbMes');if(el)return el.value;}
+  var el=document.getElementById('mesSelect');return el?el.value:'all';
+};
+const gS=()=>{
+  if(curView==='dashboard'){var el=document.getElementById('dbSuc');if(el)return el.value;}
+  var el=document.getElementById('sucSelect');return el?el.value:'all';
+};
 const gML=()=>gM()==='all'?Array.from({length:12},(_,i)=>i):[parseInt(gM())];
 const gSL=()=>gS()==='all'?SUCS:[gS()];
 function sumD(data,sl,ml){let t=0;sl.forEach(s=>ml.forEach(m=>{if(data[s]&&data[s][m]!=null)t+=data[s][m];}));return t;}
@@ -1044,32 +1242,78 @@ function qIdx(idx,from,to,sf,mi,storeList){
 
 // ── RENDER RANKING ────────────────────────────────────────────────────────────
 function renderRanking(){
-  var yrEl=document.getElementById('rkYr');if(!yrEl)return;
-  var yr=yrEl.value,mes=document.getElementById('rkMes').value;
-  var suc=document.getElementById('rkSuc').value,topN=parseInt(document.getElementById('rkTop').value)||9999;
-  var search=(document.getElementById('rkSearch').value||'').toLowerCase();
-  var mi=mes==='all'?null:parseInt(mes);
-  var cur={},cmp={};
-  if(yr==='2025'){cur=qIdx(ZOA_RAW.idx25,'2025-01-01','2025-12-31',suc,mi,ZOA_RAW.stores);}
-  else if(yr==='2026'){cur=qIdx(ZOA_RAW.idx26,'2026-01-01','2026-08-31',suc,mi,ZOA_RAW.stores);cmp=qIdx(ZOA_RAW.idx25,'2025-01-01','2025-08-31',suc,mi,ZOA_RAW.stores);}
-  else{cur=qIdx(ZOA_RAW.idx26,'2026-01-01','2026-08-31',suc,mi,ZOA_RAW.stores);cmp=qIdx(ZOA_RAW.idx25,'2025-01-01','2025-08-31',suc,mi,ZOA_RAW.stores);}
-  var ml_rk=mi===null?[0,1,2,3,4,5,6,7,8,9,10,11]:[mi];
+  var rkFrom=document.getElementById('rkFrom');
+  var rkTo=document.getElementById('rkTo');
+  var suc=document.getElementById('rkSuc')?document.getElementById('rkSuc').value:'all';
+  var search=(document.getElementById('rkSearch')?document.getElementById('rkSearch').value||'':'').toLowerCase();
+
+  // Default dates: current year Jan 1 to today, compare same period last year
+  var today=new Date();
+  var yyyy=today.getFullYear();
+  var mm=String(today.getMonth()+1).padStart(2,'0');
+  var dd=String(today.getDate()).padStart(2,'0');
+
+  if(!rkFrom.value) rkFrom.value=yyyy+'-01-01';
+  if(!rkTo.value)   rkTo.value=yyyy+'-'+mm+'-'+dd;
+
+  var fromStr=rkFrom.value; // e.g. "2026-08-03"
+  var toStr=rkTo.value;     // e.g. "2026-08-20"
+
+  // Calculate comparison period (same dates but 1 year prior)
+  var fromYr=parseInt(fromStr.substring(0,4));
+  var toYr=parseInt(toStr.substring(0,4));
+  var cmpFrom=String(fromYr-1)+fromStr.substring(4); // e.g. "2025-08-03"
+  var cmpTo=String(toYr-1)+toStr.substring(4);       // e.g. "2025-08-20"
+
+  // Determine which idx to use based on the year of the selected period
+  var curIdx = fromYr>=2026 ? ZOA_RAW.idx26 : ZOA_RAW.idx25;
+  var cmpIdx = fromYr>=2026 ? ZOA_RAW.idx25 : null; // compare against prior year
+
+  var cur=qIdx(curIdx,fromStr,toStr,suc,null,ZOA_RAW.stores);
+  var cmp=cmpIdx?qIdx(cmpIdx,cmpFrom,cmpTo,suc,null,ZOA_RAW.stores):{};
+
+  // Total for this period from daily data
   var totalQ=0;
-  if(suc==='all'){totalQ=yr==='2025'?sumD25All(ml_rk):(yr==='2026'?sumD26All(ml_rk):sumD26All([0,1,2,3,4,5,6,7]));}
-  else{var sd=yr==='2025'?D25:D26;ml_rk.forEach(function(m){if(sd[suc]&&sd[suc][m])totalQ+=sd[suc][m];});}
-  var PRODS=ZOA_RAW.products,rows=[];
+  var usedStores=suc==='all'?ZOA_RAW.stores:[suc];
+  var fromDate=new Date(fromStr),toDate=new Date(toStr);
+  for(var ds in curIdx){
+    var d=new Date(ds);
+    if(d<fromDate||d>toDate) continue;
+    var sv=curIdx[ds];
+    for(var si in sv){
+      if(suc!=='all'&&ZOA_RAW.stores[parseInt(si)]!==suc) continue;
+      for(var pi in sv[si]) totalQ+=sv[si][pi];
+    }
+  }
+
+  var PRODS=ZOA_RAW.products;
+  var rows=[];
   for(var pi in cur){
     var prod=PRODS[parseInt(pi)];if(!prod)continue;
     if(search&&prod.toLowerCase().indexOf(search)<0)continue;
     var qty=cur[pi]||0;if(qty>0)rows.push({prod:prod,qty:qty,cmp:cmp[pi]||0});
   }
-  rows.sort(function(a,b){return b.qty-a.qty;});if(topN>0)rows=rows.slice(0,topN);
+  rows.sort(function(a,b){return b.qty-a.qty;});
+
   var hasCmp=Object.keys(cmp).length>0;
   var growing=rows.filter(function(r){return hasCmp&&r.cmp>0&&r.qty>r.cmp;}).length;
   var declining=rows.filter(function(r){return hasCmp&&r.cmp>0&&r.qty<r.cmp;}).length;
+
+  // Format date range label
+  var fmtDate=function(s){var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
+  var periodLabel=fmtDate(fromStr)+' — '+fmtDate(toStr);
+  var cmpLabel=fmtDate(cmpFrom)+' — '+fmtDate(cmpTo);
+
   var rkMet=document.getElementById('rkMetrics');
-  if(rkMet)rkMet.innerHTML='<div class="mc gold"><div class="mc-lbl">Piezas</div><div class="mc-val">'+fmt(totalQ)+'</div><div class="mc-sub"><span class="badge bg-gd">total</span></div></div><div class="mc neu"><div class="mc-lbl">Productos</div><div class="mc-val">'+rows.length+'</div><div class="mc-sub"><span class="badge bg-n">SKU</span></div></div><div class="mc up"><div class="mc-lbl">Creciendo</div><div class="mc-val">'+growing+'</div><div class="mc-sub"><span class="badge bg-up">↑</span></div></div><div class="mc dn"><div class="mc-lbl">Decreciendo</div><div class="mc-val">'+declining+'</div><div class="mc-sub"><span class="badge bg-dn">↓</span></div></div>';
-  var maxQ=rows.length?rows[0].qty:1,rc=['var(--gold)','#b0b8c8','#c0844a'],tb='';
+  if(rkMet)rkMet.innerHTML=
+    '<div class="mc gold"><div class="mc-lbl">'+periodLabel+'</div><div class="mc-val">'+fmt(totalQ)+'</div><div class="mc-sub"><span class="badge bg-gd">piezas</span></div></div>'+
+    '<div class="mc neu"><div class="mc-lbl">Productos</div><div class="mc-val">'+rows.length+'</div><div class="mc-sub"><span class="badge bg-n">SKU</span></div></div>'+
+    '<div class="mc up"><div class="mc-lbl">Creciendo</div><div class="mc-val">'+growing+'</div><div class="mc-sub"><span class="badge bg-up">↑</span></div></div>'+
+    '<div class="mc dn"><div class="mc-lbl">Decreciendo</div><div class="mc-val">'+declining+'</div><div class="mc-sub"><span class="badge bg-dn">↓</span></div></div>';
+
+  var maxQ=rows.length?rows[0].qty:1;
+  var rc=['var(--gold)','#b0b8c8','#c0844a'];
+  var tb='';
   rows.forEach(function(r,i){
     var dif=hasCmp?r.qty-r.cmp:null;
     var pct=dif!=null&&r.cmp>0?((dif/r.cmp)*100).toFixed(1):null;
@@ -1077,13 +1321,25 @@ function renderRanking(){
     var bw=Math.round((r.qty/maxQ)*100);
     var difStr=dif!=null&&r.cmp>0?(dif>=0?'<span style="color:var(--up);font-weight:600">+'+fmt(dif)+'</span>':'<span style="color:var(--dn);font-weight:600">'+fmt(dif)+'</span>'):'—';
     var pctStr=pct!=null?'<span class="badge '+(isUp(pct)?'bg-up':'bg-dn')+'">'+(isUp(pct)?'↑':'↓')+' '+Math.abs(pct)+'%</span>':'—';
-    tb+='<tr><td style="font-weight:700;color:'+(rc[i]||'var(--tx3)')+';font-size:'+(i<3?14:12)+'px">'+(i+1)+'</td><td style="font-size:12px;font-weight:500">'+r.prod+'</td><td style="font-weight:600">'+fmt(r.qty)+'</td><td style="color:var(--tx2)">'+(r.cmp>0?fmt(r.cmp):'—')+'</td><td>'+difStr+'</td><td>'+pctStr+'</td><td><div style="display:flex;align-items:center;gap:5px"><div style="flex:1;background:var(--ink3);border-radius:2px;height:4px;overflow:hidden"><div style="width:'+bw+'%;height:100%;background:var(--gold);opacity:.7;border-radius:2px"></div></div><span style="font-size:10px;color:var(--tx3);min-width:32px">'+share+'%</span></div></td></tr>';
+    tb+='<tr>'+
+      '<td style="font-weight:700;color:'+(rc[i]||'var(--tx3)')+';font-size:'+(i<3?14:12)+'px">'+(i+1)+'</td>'+
+      '<td style="font-size:12px;font-weight:500">'+r.prod+'</td>'+
+      '<td style="font-weight:600">'+fmt(r.qty)+'</td>'+
+      '<td style="color:var(--tx2)">'+(r.cmp>0?fmt(r.cmp):'—')+'</td>'+
+      '<td>'+difStr+'</td>'+
+      '<td>'+pctStr+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:5px">'+
+        '<div style="flex:1;background:var(--ink3);border-radius:2px;height:4px;overflow:hidden">'+
+          '<div style="width:'+bw+'%;height:100%;background:var(--gold);opacity:.7;border-radius:2px"></div>'+
+        '</div>'+
+        '<span style="font-size:10px;color:var(--tx3);min-width:32px">'+share+'%</span>'+
+      '</div></td>'+
+    '</tr>';
   });
   var tbEl=document.getElementById('tbRanking');
-  if(tbEl)tbEl.innerHTML=tb||'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--tx3)">Sin resultados</td></tr>';
+  if(tbEl)tbEl.innerHTML=tb||'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--tx3)">Sin resultados para este período</td></tr>';
 }
 
-// ── RENDER PRODGEN ────────────────────────────────────────────────────────────
 function renderProdGen(){
   var yrEl=document.getElementById('pgYr');if(!yrEl)return;
   var yr=yrEl.value,mesVal=document.getElementById('pgMes').value;
@@ -1391,6 +1647,15 @@ function switchView(name,el){
     setTimeout(renderDiario,80);
   } else if(name==='ranking'){
     document.getElementById('vrnk').style.display='';
+    // Set default date range if not set
+    var _today=new Date();
+    var _yyyy=_today.getFullYear();
+    var _mm=String(_today.getMonth()+1).padStart(2,'0');
+    var _dd=String(_today.getDate()).padStart(2,'0');
+    var _rkFrom=document.getElementById('rkFrom');
+    var _rkTo=document.getElementById('rkTo');
+    if(_rkFrom&&!_rkFrom.value) _rkFrom.value=_yyyy+'-01-01';
+    if(_rkTo&&!_rkTo.value) _rkTo.value=_yyyy+'-'+_mm+'-'+_dd;
     setTimeout(renderRanking,80);
   } else if(name==='proveedores'){
     // Hide pub-banner to avoid dead space
