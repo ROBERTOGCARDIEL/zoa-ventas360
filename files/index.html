@@ -840,18 +840,10 @@ var sbWriteClient = sbClient; // use same client, SVC key used in fetch headers
 // ── LOAD DATA FROM SUPABASE ────────────────────────────────────────────────────
 async function loadFromSupabase(){
   try{
-    const resp = await fetch(SB_URL+'/rest/v1/zoa_data?select=key,value,updated_at&limit=20', {
-      method: 'GET',
-      headers: {
-        'apikey': SB_ANON,
-        'Authorization': 'Bearer '+SB_ANON,
-        'Content-Type': 'application/json'
-      }
-    });
-    if(!resp.ok){ console.warn('loadFromSupabase HTTP error:', resp.status); return false; }
-    const data = await resp.json();
-    if(!data || !data.length){ console.log('Supabase: no data yet'); return false; }
-    const error = null;
+    if(!sbClient){ console.warn('No sbClient'); return false; }
+    const {data, error} = await sbClient.from('zoa_data').select('key,value,updated_at');
+    if(error){ console.warn('loadFromSupabase error:', error.message); return false; }
+    if(!data || !data.length){ console.log('Supabase: tabla vacía - sube datos iniciales'); return false; }
     
     let updated = false;
     data.forEach(function(row){
