@@ -231,10 +231,7 @@ input[type=file]{display:none}
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 6h6M5 9h4"/></svg>
     Detalle completo
   </div>
-  <div class="ni" onclick="switchView('diario',this)">
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11l4-4 3 3 5-5"/></svg>
-    Comparativo diario
-  </div>
+  
   <div class="ni" onclick="switchView('ranking',this)">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 14V8M8 14V3M13 14V6"/></svg>
     Ranking productos
@@ -835,21 +832,25 @@ const SCOL={'Líneas':'#c9a86c','M A':'#7a9fd4','Club':'#6dbf8a','DM':'#e0875a',
 const SB_URL = 'https://kpmazbhoomixdadehrvt.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbWF6Ymhvb21peGRhZGVocnZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjU5NTYsImV4cCI6MjEwMzM0MTk1Nn0.Q-9a_XfOOihVrB8my0ralHnj73LPkF_gxB-vpHFwg-s';
 const SB_SVC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbWF6Ymhvb21peGRhZGVocnZ0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Nzc2NTk1NiwiZXhwIjoyMTAzMzQxOTU2fQ.o_p_CMv4D8buDPQGb2shxvLhfAfsafW-jhREp_NTEVc';
+// Single read client only - writes use fetch with SVC key directly
 var sbClient = null;
-try{ sbClient = supabase.createClient(SB_URL, SB_ANON); }catch(e){ console.warn('Supabase init error:', e); }
-var sbWriteClient = null;
-try{ sbWriteClient = supabase.createClient(SB_URL, SB_SVC_KEY); }catch(e){ console.warn('Supabase write client error:', e); }
+try{ sbClient = supabase.createClient(SB_URL, SB_ANON, {auth:{persistSession:false,autoRefreshToken:false}}); }catch(e){ console.warn('Supabase init error:', e); }
+var sbWriteClient = sbClient; // use same client, SVC key used in fetch headers
 
 // ── LOAD DATA FROM SUPABASE ────────────────────────────────────────────────────
 async function loadFromSupabase(){
-  if(!sbClient) return false;
   try{
-    const resp = await fetch(SB_URL+'/rest/v1/zoa_data?select=key,value,updated_at', {
-      headers: {'apikey': SB_ANON, 'Authorization': 'Bearer '+SB_ANON}
+    const resp = await fetch(SB_URL+'/rest/v1/zoa_data?select=key,value,updated_at&limit=20', {
+      method: 'GET',
+      headers: {
+        'apikey': SB_ANON,
+        'Authorization': 'Bearer '+SB_ANON,
+        'Content-Type': 'application/json'
+      }
     });
-    if(!resp.ok) return false;
+    if(!resp.ok){ console.warn('loadFromSupabase HTTP error:', resp.status); return false; }
     const data = await resp.json();
-    if(!data || !data.length) return false;
+    if(!data || !data.length){ console.log('Supabase: no data yet'); return false; }
     const error = null;
     
     let updated = false;
@@ -888,8 +889,7 @@ async function loadFromSupabase(){
 
 // ── SAVE DATA TO SUPABASE ──────────────────────────────────────────────────────
 async function saveToSupabase(){
-  if(!sbWriteClient){ console.warn('No write client'); return false; }
-  let writeClient = sbWriteClient;
+  if(!SB_URL){ return false; }
   
   const rows = [
     {key:'d25', value: D25, updated_at: new Date().toISOString()},
@@ -902,15 +902,28 @@ async function saveToSupabase(){
   
   let allOk = true;
   for(const row of rows){
-    const {error} = await writeClient.from('zoa_data').upsert(row, {onConflict:'key'});
-    if(error){ console.error('Save error for', row.key, error); allOk=false; }
+    try{
+      const resp = await fetch(SB_URL+'/rest/v1/zoa_data', {
+        method: 'POST',
+        headers: {
+          'apikey': SB_SVC_KEY,
+          'Authorization': 'Bearer '+SB_SVC_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(row)
+      });
+      if(!resp.ok){ console.error('Save error for', row.key, await resp.text()); allOk=false; }
+    }catch(e){ console.error('Save error:', row.key, e); allOk=false; }
   }
   if(allOk) console.log('✓ Datos guardados en Supabase');
   return allOk;
 }
 
 // Load on startup (after a short delay to let the page render)
-setTimeout(function(){ loadFromSupabase(); }, 800);
+setTimeout(function(){ 
+  loadFromSupabase().catch(function(e){ console.warn('Supabase load failed:', e); });
+}, 1500);
 const SUCS=['Líneas','M A','Club','DM','Zapotlanejo','ELITE'];
 const SUCS_ALL_2025=['Líneas','M A','Club','DM','Zapotlanejo','ELITE','Tienda Stock','Izazaga','Izazaga2','Zapotlanejo2'];
 const SUCS_ALL_2026=['Líneas','M A','Club','DM','Zapotlanejo','ELITE','Tienda Stock','Zapotlanejo2'];
