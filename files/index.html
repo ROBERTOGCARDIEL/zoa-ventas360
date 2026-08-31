@@ -428,168 +428,15 @@ input[type=file]{display:none}
 
   <!-- RANKING -->
   <div id="vrnk" style="display:none">
-    <div class="card" style="margin-bottom:12px">
-      <div style="margin-bottom:12px"><div class="card-t">Ranking de productos</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <select id="rkYr" class="sel" onchange="renderRanking()">
-          <option value="all">2026 vs 2025 (ene–jun)</option>
-          <option value="2025">Solo 2025 (anual)</option>
-          <option value="2026">Solo 2026 (ene–jun)</option>
-        </select>
-        <select id="rkMes" class="sel" onchange="renderRanking()">
-          <option value="all">Todos los meses</option>
-          <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
-          <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
-          <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
-          <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
-        </select>
-        <select id="rkSuc" class="sel" onchange="renderRanking()">
-          <option value="all">Todas las sucursales</option>
-        </select>
-        <select id="rkTop" class="sel" onchange="renderRanking()">
-          <option value="20">Top 20</option><option value="10">Top 10</option>
-          <option value="50">Top 50</option><option value="0">Todos</option>
-        </select>
-      </div>
-      <input id="rkSearch" class="inp" placeholder="🔍 Buscar producto…" oninput="renderRanking()" style="width:100%">
-    </div>
-    <div class="metrics" id="rkMetrics"></div>
-    <div class="card" style="padding:0">
-      <div class="tw">
-        <table id="rkTable">
-          <thead><tr>
-            <th style="width:36px">#</th><th>Producto</th><th>Pzas</th>
-            <th>Comp.</th><th>Var.%</th><th style="min-width:100px">Part.</th>
-          </tr></thead>
-          <tbody id="tbRanking"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-
-
-
-  <!-- PROVEEDORES -->
-  <div id="vprov" style="display:none">
-
-    <!-- Filtros compactos -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <select id="pvYr" class="sel" onchange="renderProv()" style="flex:1;min-width:140px">
-        <option value="2026">2026 (ene–jun)</option>
-        <option value="2025">2025 (anual)</option>
-        <option value="all">2025 + 2026</option>
-      </select>
-      <select id="pvMes" class="sel" onchange="renderProv()" style="flex:1;min-width:120px">
-        <option value="all">Todos los meses</option>
-        <option value="0">Enero</option><option value="1">Febrero</option>
-        <option value="2">Marzo</option><option value="3">Abril</option>
-        <option value="4">Mayo</option><option value="5">Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option>
-        <option value="8">Septiembre</option><option value="9">Octubre</option>
-        <option value="10">Noviembre</option><option value="11">Diciembre</option>
-      </select>
-      <select id="pvSuc" class="sel" onchange="renderProv()" style="flex:1;min-width:140px">
-        <option value="all">Todas las sucursales</option>
-        <option value="Líneas">Líneas Originales</option>
-        <option value="M A">Miguel Alemán</option>
-        <option value="Club">Club Jeans</option>
-        <option value="DM">Denim Click</option>
-        <option value="Zapotlanejo">Outlet Zapotlanejo</option>
-        <option value="ELITE">Elite</option>
-      </select>
-    </div>
-
-    <!-- KPI cards con dona integrada -->
-    <div id="pvMetrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px"></div>
-
-    <!-- Tabs -->
-    <div class="tab-row" id="pvTabRow" style="margin-bottom:12px">
-      <div class="tab active" id="pvt-gen" onclick="setPvTab('general',this)">🏆 General</div>
-      <div class="tab" id="pvt-gom" onclick="setPvTab('Gomex',this)" style="color:#c9a86c">Gomex</div>
-      <div class="tab" id="pvt-pam" onclick="setPvTab('Pamex',this)" style="color:#7a9fd4">Pamex</div>
-      <div class="tab" id="pvt-pro" onclick="setPvTab('Promex',this)" style="color:#6dbf8a">Promex</div>
-    </div>
-
-    <!-- Tabla ranking -->
-    <div class="card" style="padding:0">
-      <div class="tw">
-        <table id="pvTable">
-          <thead><tr>
-            <th style="width:36px">#</th>
-            <th>Producto</th>
-            <th style="width:75px">Prov.</th>
-            <th style="width:80px">Pzas</th>
-            <th style="width:110px">% del prov.</th>
-            <th style="width:100px">% del total</th>
-          </tr></thead>
-          <tbody id="tbProv"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-
-  <!-- IDEAL +20% -->
-  <div id="videal" style="display:none">
-
-    <!-- KPI Dashboard row -->
-    <div id="idealKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
-
-    <!-- Filtros -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <select id="idSuc" class="sel" onchange="renderIdeal()" style="flex:1;min-width:150px">
-        <option value="all">Todas las sucursales</option>
-        <option value="Líneas">Líneas Originales</option>
-        <option value="M A">Miguel Alemán</option>
-        <option value="Club">Club Jeans</option>
-        <option value="DM">Denim Click</option>
-        <option value="Zapotlanejo">Outlet Zapotlanejo</option>
-        <option value="ELITE">Elite</option>
-      </select>
-      <select id="idMes" class="sel" onchange="renderIdeal()" style="flex:1;min-width:140px">
-        <option value="all">Todos los meses</option>
-        <option value="0">Enero</option><option value="1">Febrero</option>
-        <option value="2">Marzo</option><option value="3">Abril</option>
-        <option value="4">Mayo</option><option value="5">Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option>
-        <option value="8">Septiembre</option><option value="9">Octubre</option>
-        <option value="10">Noviembre</option><option value="11">Diciembre</option>
-      </select>
-    </div>
-
-    <!-- Tabla por mes × sucursal -->
-    <div class="card" style="padding:0;margin-bottom:12px">
-      <div class="tw">
-        <table id="idealTable">
-          <thead><tr>
-            <th>Mes</th>
-            <th>Sucursal</th>
-            <th>2025 real</th>
-            <th>Meta +20%</th>
-            <th>2026 real</th>
-            <th>Faltante</th>
-            <th>Avance</th>
-            <th style="min-width:120px">Progreso</th>
-          </tr></thead>
-          <tbody id="tbIdeal"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-
-  <!-- PRODUCTOS GENERAL -->
-  <div<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-      <div style="display:flex;align-items:center;gap:6px;flex:2;min-width:260px;background:var(--ink3);border:1px solid var(--b1);border-radius:var(--r);padding:6px 10px">
+    <!-- Ranking filters - compact single row -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:6px;flex:2;min-width:240px;background:var(--ink3);border:1px solid var(--b1);border-radius:var(--r);padding:6px 10px">
         <span style="font-size:11px;color:var(--tx3);white-space:nowrap">Del</span>
-        <input type="date" id="rkFrom" style="background:transparent;border:none;color:var(--tx1);font-size:12px;flex:1;outline:none" onchange="renderRanking()">
+        <input type="date" id="rkFrom" style="background:transparent;border:none;color:var(--tx1);font-size:12px;flex:1;outline:none;cursor:pointer" onchange="renderRanking()">
         <span style="font-size:11px;color:var(--tx3);white-space:nowrap">al</span>
-        <input type="date" id="rkTo" style="background:transparent;border:none;color:var(--tx1);font-size:12px;flex:1;outline:none" onchange="renderRanking()">
+        <input type="date" id="rkTo" style="background:transparent;border:none;color:var(--tx1);font-size:12px;flex:1;outline:none;cursor:pointer" onchange="renderRanking()">
       </div>
-      <select id="rkSuc" class="sel" onchange="renderRanking()" style="flex:1;min-width:160px">
+      <select id="rkSuc" class="sel" onchange="renderRanking()" style="flex:1;min-width:150px">
         <option value="all">Todas las sucursales</option>
         <optgroup label="Activas 2026">
           <option value="Líneas">Líneas Originales</option>
@@ -606,138 +453,29 @@ input[type=file]{display:none}
           <option value="Zapotlanejo2">Zapotlanejo 2</option>
         </optgroup>
       </select>
-      <input id="rkSearch" type="text" placeholder="🔍 Buscar producto..." class="sel" style="flex:1;min-width:160px" oninput="renderRanking()">
+      <input id="rkSearch" type="text" placeholder="🔍 Buscar..." class="sel" style="flex:1;min-width:140px" oninput="renderRanking()">
     </div>
-    <div class="metrics" id="rkMetrics"></div>
-    <div class="card" style="padding:0">
-      <div class="tw">
-        <table id="rkTable">
+    <!-- KPIs -->
+    <div class="metrics" id="rkMetrics" style="margin-bottom:12px"></div>
+    <!-- Table -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tw" style="overflow-x:auto">
+        <table id="rkTable" style="width:100%;min-width:600px">
           <thead><tr>
-            <th style="width:36px">#</th><th>Producto</th><th>Pzas</th>
-            <th>Comp.</th><th>Var.%</th><th style="min-width:100px">Part.</th>
+            <th style="width:36px">#</th>
+            <th>Producto</th>
+            <th>Período actual</th>
+            <th>Año anterior</th>
+            <th>Dif. pzas</th>
+            <th>Var.%</th>
+            <th style="min-width:100px">Part.</th>
           </tr></thead>
           <tbody id="tbRanking"></tbody>
         </table>
       </div>
     </div>
   </div>
-
-
-
-
-  <!-- PROVEEDORES -->
-  <div id="vprov" style="display:none">
-
-    <!-- Filtros compactos -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <select id="pvYr" class="sel" onchange="renderProv()" style="flex:1;min-width:140px">
-        <option value="2026">2026 (ene–jun)</option>
-        <option value="2025">2025 (anual)</option>
-        <option value="all">2025 + 2026</option>
-      </select>
-      <select id="pvMes" class="sel" onchange="renderProv()" style="flex:1;min-width:120px">
-        <option value="all">Todos los meses</option>
-        <option value="0">Enero</option><option value="1">Febrero</option>
-        <option value="2">Marzo</option><option value="3">Abril</option>
-        <option value="4">Mayo</option><option value="5">Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option>
-        <option value="8">Septiembre</option><option value="9">Octubre</option>
-        <option value="10">Noviembre</option><option value="11">Diciembre</option>
-      </select>
-      <select id="pvSuc" class="sel" onchange="renderProv()" style="flex:1;min-width:140px">
-        <option value="all">Todas las sucursales</option>
-        <option value="Líneas">Líneas Originales</option>
-        <option value="M A">Miguel Alemán</option>
-        <option value="Club">Club Jeans</option>
-        <option value="DM">Denim Click</option>
-        <option value="Zapotlanejo">Outlet Zapotlanejo</option>
-        <option value="ELITE">Elite</option>
-      </select>
-    </div>
-
-    <!-- KPI cards con dona integrada -->
-    <div id="pvMetrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px"></div>
-
-    <!-- Tabs -->
-    <div class="tab-row" id="pvTabRow" style="margin-bottom:12px">
-      <div class="tab active" id="pvt-gen" onclick="setPvTab('general',this)">🏆 General</div>
-      <div class="tab" id="pvt-gom" onclick="setPvTab('Gomex',this)" style="color:#c9a86c">Gomex</div>
-      <div class="tab" id="pvt-pam" onclick="setPvTab('Pamex',this)" style="color:#7a9fd4">Pamex</div>
-      <div class="tab" id="pvt-pro" onclick="setPvTab('Promex',this)" style="color:#6dbf8a">Promex</div>
-    </div>
-
-    <!-- Tabla ranking -->
-    <div class="card" style="padding:0">
-      <div class="tw">
-        <table id="pvTable">
-          <thead><tr>
-            <th style="width:36px">#</th>
-            <th>Producto</th>
-            <th style="width:75px">Prov.</th>
-            <th style="width:80px">Pzas</th>
-            <th style="width:110px">% del prov.</th>
-            <th style="width:100px">% del total</th>
-          </tr></thead>
-          <tbody id="tbProv"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-
-  <!-- IDEAL +20% -->
-  <div id="videal" style="display:none">
-
-    <!-- KPI Dashboard row -->
-    <div id="idealKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
-
-    <!-- Filtros -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <select id="idSuc" class="sel" onchange="renderIdeal()" style="flex:1;min-width:150px">
-        <option value="all">Todas las sucursales</option>
-        <option value="Líneas">Líneas Originales</option>
-        <option value="M A">Miguel Alemán</option>
-        <option value="Club">Club Jeans</option>
-        <option value="DM">Denim Click</option>
-        <option value="Zapotlanejo">Outlet Zapotlanejo</option>
-        <option value="ELITE">Elite</option>
-      </select>
-      <select id="idMes" class="sel" onchange="renderIdeal()" style="flex:1;min-width:140px">
-        <option value="all">Todos los meses</option>
-        <option value="0">Enero</option><option value="1">Febrero</option>
-        <option value="2">Marzo</option><option value="3">Abril</option>
-        <option value="4">Mayo</option><option value="5">Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option>
-        <option value="8">Septiembre</option><option value="9">Octubre</option>
-        <option value="10">Noviembre</option><option value="11">Diciembre</option>
-      </select>
-    </div>
-
-    <!-- Tabla por mes × sucursal -->
-    <div class="card" style="padding:0;margin-bottom:12px">
-      <div class="tw">
-        <table id="idealTable">
-          <thead><tr>
-            <th>Mes</th>
-            <th>Sucursal</th>
-            <th>2025 real</th>
-            <th>Meta +20%</th>
-            <th>2026 real</th>
-            <th>Faltante</th>
-            <th>Avance</th>
-            <th style="min-width:120px">Progreso</th>
-          </tr></thead>
-          <tbody id="tbIdeal"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-
-  <!-- PRODUCTOS GENERAL -->
-  <div id="vprodgen" style="display:none">
+  id="vprodgen" style="display:none">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
       <select id="pgYr" class="sel" onchange="renderProdGen()" style="flex:1;min-width:130px">
         <option value="all">2025 + 2026</option>
