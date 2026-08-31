@@ -550,6 +550,25 @@ input[type=file]{display:none}
     </div>
   </div>
 
+<!-- LOGIN MODAL -->
+<div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#1a1a28;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:32px;width:320px;max-width:90vw">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:24px;font-weight:700;color:#c9a86c;letter-spacing:0.15em">ZOA</div>
+      <div style="font-size:13px;color:#9090a8;margin-top:4px">Acceso Gerencia</div>
+    </div>
+    <input class="minp" type="password" id="loginPw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()"
+      style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#eef;font-size:14px;margin-bottom:10px;box-sizing:border-box;outline:none">
+    <div id="loginErr" style="display:none;color:#d97070;font-size:12px;margin-bottom:8px;text-align:center">Contraseña incorrecta</div>
+    <button onclick="doLogin()" style="width:100%;padding:10px;background:#c9a86c;color:#000;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px">Entrar</button>
+    <button onclick="closeLogin()" style="width:100%;padding:8px;background:transparent;color:#9090a8;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;cursor:pointer">Cancelar</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL (in sidebar) -->
+<div id="admPanel" style="display:none;padding:10px 0">
+</div>
+
 <script>
 const D25={'Líneas':[7472,6371,6352,5110,6447,6939,7365,5792,6484,7092,9715,17340],'M A':[7650,6764,5890,6876,7059,6694,7600,7432,4967,5888,9843,16725],'Club':[1709,1821,1658,1921,1592,1958,1814,1815,1324,1628,2267,4245],'DM':[149,175,110,792,2401,2702,1714,1141,911,542,847,654],'Zapotlanejo':[1090,883,1279,1294,916,1067,1118,1157,707,968,1193,2221],'ELITE':[0,0,0,0,73,1508,1337,1340,1169,1147,2051,2848],'Tienda Stock':[6692,5276,6149,5601,5160,7362,5628,5742,4199,6859,7427,15282],'Izazaga':[3077,3327,2986,3278,3021,3359,3407,2749,2458,3003,4269,1166],'Izazaga2':[0,0,0,0,0,0,0,0,0,0,388,5874],'Zapotlanejo2':[0,225,516,443,692,666,714,534,287,284,652,1010]};
 const D26={'Líneas':[6584,6665,7768,7057,6995,7960,8018,1631,null,null,null,null],'M A':[7224,7092,7118,6221,7211,7614,7019,1667,null,null,null,null],'Club':[1736,1270,1612,1260,1460,1437,1517,284,null,null,null,null],'DM':[197,3183,5768,2925,3292,2862,3079,305,null,null,null,null],'Zapotlanejo':[855,515,556,518,528,618,376,null,null,null,null,null],'ELITE':[3148,1859,1719,1650,1592,2020,1817,293,null,null,null,null],'Tienda Stock':[4900,null,null,null,null,null,null,null,null,null,null,null],'Zapotlanejo2':[172,null,null,null,null,null,null,null,null,null,null,null]};
@@ -660,6 +679,8 @@ function doLogin(){
     if(admPill) admPill.style.display='flex';
     var admPanel=document.getElementById('admPanel');
     if(admPanel) admPanel.style.display='';
+    var sbUp=document.getElementById('sbUp');
+    if(sbUp) sbUp.style.display='';
     var sbCfg=document.getElementById('sbConfig');
     if(sbCfg) sbCfg.style.display='block';
   } else {
@@ -675,6 +696,8 @@ function logoutAdmin(){
   if(admPill) admPill.style.display='none';
   var admPanel=document.getElementById('admPanel');
   if(admPanel) admPanel.style.display='none';
+  var sbUp=document.getElementById('sbUp');
+  if(sbUp) sbUp.style.display='none';
   var sbCfg=document.getElementById('sbConfig');
   if(sbCfg) sbCfg.style.display='none';
 }
