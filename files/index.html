@@ -614,18 +614,29 @@ async function loadFromSupabase(){
     if(error||!data||!data.length) return false;
     data.forEach(function(row){
       try{
-        if(row.key==='d25'&&row.value) Object.assign(D25,row.value);
-        else if(row.key==='d26'&&row.value) Object.assign(D26,row.value);
-        else if(row.key==='daily'&&row.value) Object.assign(DAILY,row.value);
+        if(row.key==='d25'&&row.value){
+          // REPLACE each store's monthly array completely
+          Object.keys(row.value).forEach(function(s){D25[s]=row.value[s];});
+        }
+        else if(row.key==='d26'&&row.value){
+          Object.keys(row.value).forEach(function(s){D26[s]=row.value[s];});
+        }
+        else if(row.key==='daily'&&row.value){
+          // REPLACE daily data completely per year
+          Object.keys(row.value).forEach(function(yr){DAILY[yr]=row.value[yr];});
+        }
         else if(row.key==='zoa_data'&&row.value){
           if(row.value.products) ZOA_DATA.products=row.value.products;
-          if(row.value.idx25) Object.assign(ZOA_DATA.idx25,row.value.idx25);
-          if(row.value.idx26) Object.assign(ZOA_DATA.idx26,row.value.idx26);
+          if(row.value.stores) ZOA_DATA.stores=row.value.stores;
+          // REPLACE idx completely (not merge - prevents accumulation)
+          if(row.value.idx25) ZOA_DATA.idx25=row.value.idx25;
+          if(row.value.idx26) ZOA_DATA.idx26=row.value.idx26;
         }
         else if(row.key==='zoa_raw'&&row.value){
           if(row.value.products) ZOA_RAW.products=row.value.products;
-          if(row.value.idx25) Object.assign(ZOA_RAW.idx25,row.value.idx25);
-          if(row.value.idx26) Object.assign(ZOA_RAW.idx26,row.value.idx26);
+          if(row.value.stores) ZOA_RAW.stores=row.value.stores;
+          if(row.value.idx25) ZOA_RAW.idx25=row.value.idx25;
+          if(row.value.idx26) ZOA_RAW.idx26=row.value.idx26;
         }
         else if(row.key==='updated_at'&&row.value){
           var banner=document.getElementById('pubBanner');
@@ -921,8 +932,14 @@ function processFile(file,year){
         });
       });
       if(!DAILY[year])DAILY[year]={};
+      // Clear DAILY for months+stores in this file before writing
       storeArr.forEach(function(store){
         if(!DAILY[year][store])DAILY[year][store]={};
+        monthArr.forEach(function(mi){
+          DAILY[year][store][String(mi)]={};  // Clear month
+        });
+      });
+      storeArr.forEach(function(store){
         Object.entries(byStoreDay[store]||{}).forEach(function(e){
           var ds=e[0],q=e[1],mi=String(parseInt(ds.split('-')[1])-1);
           if(!DAILY[year][store][mi])DAILY[year][store][mi]={};
